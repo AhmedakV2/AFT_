@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: api
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/aft}
+    username: ${DB_USERNAME:aft}
+    password: ${DB_PASSWORD:aft_local_pw}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:aft}
+    password: ${RABBITMQ_PASSWORD:aft_local_pw}
+
+aft:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-ttl-minutes: ${JWT_ACCESS_TTL_MINUTES:30}
+    refresh-ttl-days: ${JWT_REFRESH_TTL_DAYS:30}
+  storage:
+    endpoint: ${STORAGE_ENDPOINT}
+    access-key: ${STORAGE_ACCESS_KEY}
+    secret-key: ${STORAGE_SECRET_KEY}
+    screenshot-bucket: aft-screenshots
+    export-bucket: aft-exports
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+server:
+  port: 8080

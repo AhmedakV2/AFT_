@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: worker
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/aft}
+    username: ${DB_USERNAME:aft}
+    password: ${DB_PASSWORD:aft_local_pw}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:aft}
+    password: ${RABBITMQ_PASSWORD:aft_local_pw}
+
+aft:
+  selenium:
+    grid-url: ${SELENIUM_GRID_URL:http://localhost:4444}
+  storage:
+    endpoint: ${STORAGE_ENDPOINT}
+    access-key: ${STORAGE_ACCESS_KEY}
+    secret-key: ${STORAGE_SECRET_KEY}
+    screenshot-bucket: aft-screenshots
+management:
+  endpoints:
+    web:
+     exposure:
+      include: health
+      
+server:
+  port: 8081
+
