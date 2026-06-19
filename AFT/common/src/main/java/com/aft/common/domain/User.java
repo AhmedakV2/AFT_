@@ -14,7 +14,7 @@ public class User extends BaseEntity {
     private String email;
 
 
-    @Column(nullable = false, unique = true)
+    @Column
     private String phone;
 
     @Column(nullable = false,unique = true)
@@ -24,6 +24,6 @@ public class User extends BaseEntity {
     private String passwordHash;
 
     @Column(name = "email_verified",nullable = false)
-    private Boolean emailVerified;
+    private boolean emailVerified;
 
 }

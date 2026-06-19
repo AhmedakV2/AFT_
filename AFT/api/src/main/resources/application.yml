@@ -1,9 +1,9 @@
 spring:
   application:
-    name: dapi
+    name: aft-api
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/aft}
-    username: ${DB_USERNAME:aft}
+    username: ${DB_USER:aft}
     password: ${DB_PASSWORD:aft_local_pw}
   jpa:
     open-in-view: false
@@ -17,10 +17,10 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:aft}
-    password: ${RABBITMQ_PASSWORD:aft_local_pw}
+    host: ${RABBIT_HOST:localhost}
+    port: ${RABBIT_PORT:5672}
+    username: ${RABBIT_USER:aft}
+    password: ${RABBIT_PASSWORD:aft_local_pw}
 
 aft:
   jwt:
@@ -28,7 +28,7 @@ aft:
     access-ttl-minutes: ${JWT_ACCESS_TTL_MINUTES:30}
     refresh-ttl-days: ${JWT_REFRESH_TTL_DAYS:30}
   google:
-    client-id: ${GOOGLE_CLIENT_ID}
+    client-id: ${GOOGLE_CLIENT_ID:}
   storage:
     endpoint: ${STORAGE_ENDPOINT}
     access-key: ${STORAGE_ACCESS_KEY}
