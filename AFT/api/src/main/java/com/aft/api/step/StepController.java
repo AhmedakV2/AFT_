@@ -2,6 +2,7 @@ package com.aft.api.step;
 
 import com.aft.api.common.ApiResponse;
 import com.aft.api.step.dto.StepResponse;
+import com.aft.api.step.dto.UpdateStepRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

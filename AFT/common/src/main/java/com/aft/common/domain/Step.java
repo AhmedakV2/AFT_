@@ -11,22 +11,23 @@ import java.util.Map;
 @Entity
 @Table(name = "steps")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Step extends BaseEntity{
+public class Step extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY,optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "scenario_id")
     private Scenario scenario;
 
-
-    @Column(name = "step_order",nullable = false)
-    private int order;
+    @Column(name = "step_order", nullable = false)
+    private int stepOrder;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ActionType action;
 
-
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private Map<String,String> selectors;
+    private Map<String, String> selectors;
+
+    @Column(columnDefinition = "TEXT")
+    private String value;
 }
