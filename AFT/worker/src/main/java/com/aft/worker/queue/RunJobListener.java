@@ -16,13 +16,10 @@ public class RunJobListener {
 
     private final ScenarioExecutor executor;
 
-    @RabbitListener(queues = RunQueue.NAME,concurrency = "2")
+    @RabbitListener(queues = RunQueue.NAME, concurrency = "2")
     public void onMessage(String testRunId) {
-        log.info("Calıştırma sıraya alında: {}", testRunId);
-        try{
-            executor.execute(UUID.fromString(testRunId));
-        }catch (Exception e){
-            log.error("Calıştırma başarısız: {}", testRunId, e);
-        }
+        log.info("Çalıştırma sıraya alındı: {}", testRunId);
+        executor.execute(UUID.fromString(testRunId));
     }
+
 }

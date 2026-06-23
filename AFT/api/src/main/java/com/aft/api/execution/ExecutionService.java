@@ -1,6 +1,7 @@
 package com.aft.api.execution;
 
 import com.aft.api.common.exception.NotFoundException;
+import com.aft.api.common.exception.TooManyRequestsException;
 import com.aft.api.common.security.SecurityUtils;
 import com.aft.api.execution.dto.RunResponse;
 import com.aft.common.domain.Scenario;
@@ -11,6 +12,7 @@ import com.aft.common.repository.ScenarioRepository;
 import com.aft.common.repository.StepRepository;
 import com.aft.common.repository.TestRunRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -29,20 +32,31 @@ public class ExecutionService {
     private final TestRunRepository testRuns;
     private final RabbitTemplate rabbit;
 
+    @Value("${aft.limits.max-concurrent-runs-per-user:5}")
+    private int maxConcurrentPerUser;
 
     @Transactional
     public RunResponse trigger(UUID scenarioId) {
-        Scenario scenario = scenarios.findByIdAndModule_Project_User_Id(scenarioId, SecurityUtils.currentUserId())
+        UUID userId = SecurityUtils.currentUserId();
+        long active = testRuns.countByScenario_Module_Project_User_IdAndStatusIn(
+                userId, List.of(RunStatus.QUEUED, RunStatus.RUNNING));
+        if (active >= maxConcurrentPerUser) {
+            throw new TooManyRequestsException(
+                    "Ayni anda en fazla " + maxConcurrentPerUser + " calistirma yapabilirsiniz. "
+                            + "Mevcut calistirmalar bitince tekrar deneyin.");
+        }
+
+        Scenario scenario = scenarios.findByIdAndModule_Project_User_Id(scenarioId, userId)
                 .orElseThrow(()-> new NotFoundException("Senaryo bulunamadı"));
 
         int total= steps.countByScenario_Id(scenarioId);
         TestRun run = testRuns.save(TestRun.builder()
-                        .scenario(scenario)
-                        .status(RunStatus.QUEUED)
-                        .totalSteps(total)
-                        .passedSteps(0)
-                        .build()
-                );
+                .scenario(scenario)
+                .status(RunStatus.QUEUED)
+                .totalSteps(total)
+                .passedSteps(0)
+                .build()
+        );
 
         UUID runId = run.getId();
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization()  {
@@ -52,7 +66,6 @@ public class ExecutionService {
 
         });
         return new RunResponse(runId,run.getStatus(),total);
-
     }
 
     @Transactional

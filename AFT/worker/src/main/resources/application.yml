@@ -16,6 +16,14 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:aft}
     password: ${RABBITMQ_PASSWORD:aft_local_pw}
+    listener:
+      simple:
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 5s
+          multiplier: 2
+        default-requeue-rejected: false
 
 aft:
   selenium:
@@ -25,12 +33,15 @@ aft:
     access-key: ${STORAGE_ACCESS_KEY}
     secret-key: ${STORAGE_SECRET_KEY}
     screenshot-bucket: aft-screenshots
+
 management:
   endpoints:
     web:
-     exposure:
-      include: health
-      
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
 server:
   port: 8081
-

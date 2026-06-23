@@ -35,15 +35,20 @@ aft:
     secret-key: ${STORAGE_SECRET_KEY:minioadmin}
     screenshot-bucket: ${STORAGE_SCREENSHOT_BUCKET:aft-screenshots}
     export-bucket: ${STORAGE_EXPORT_BUCKET:aft-exports}
+  limits:
+    max-concurrent-runs-per-user: ${MAX_CONCURRENT_RUNS_PER_USER:5}
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 server:
   port: 8080
