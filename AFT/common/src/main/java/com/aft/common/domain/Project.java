@@ -8,7 +8,7 @@ import lombok.*;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Project extends BaseEntity{
     @ManyToOne(fetch= FetchType.LAZY,optional = false)
-    @JoinColumn(name= "userId")
+    @JoinColumn(name= "user_Id")
     private User user;
 
     @Column(nullable = false)

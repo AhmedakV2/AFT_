@@ -18,7 +18,7 @@ public class JwtService {
     private final long accessTtlMinutes;
 
     public JwtService(AftProperties props){
-        this.key= Keys.hmacShaKeyFor(Decoders.BASE64.decode(props.jwt().secret()));
+        this.key= Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(props.jwt().secret()));
         this.accessTtlMinutes=props.jwt().accessTtlMinutes();
     }
 

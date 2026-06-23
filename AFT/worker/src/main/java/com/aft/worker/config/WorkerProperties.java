@@ -1,6 +1,5 @@
 package com.aft.worker.config;
 
-import org.openqa.selenium.bidi.module.Storage;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "aft")

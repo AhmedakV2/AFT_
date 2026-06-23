@@ -40,7 +40,7 @@ public class ScenarioExecutor {
                     String key =screenshots.upload(driver,testRunId,step.getStepOrder());
                     state.recordStep(testRunId,step.getId(),false,e.getMessage(),key);
                     failed = true;
-                    log.warn("Adım başarısız [run=(),order=()]:{}",testRunId,step.getStepOrder(),e.getMessage() );
+                    log.warn("Adım başarısız [run={},order={}]:{}",testRunId,step.getStepOrder(),e.getMessage() );
                   break;
                 }
             }

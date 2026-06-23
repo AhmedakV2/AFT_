@@ -33,7 +33,8 @@ public class ModuleController {
     }
 
     @PostMapping
-    public ApiResponse<ModuleResponse> create(@RequestBody UUID projectId ,CreateModuleRequest req){
+    public ApiResponse<ModuleResponse> create(@RequestParam UUID projectId,
+                                              @Valid @RequestBody CreateModuleRequest req) {
         return ApiResponse.ok(service.create(projectId, req));
     }
 

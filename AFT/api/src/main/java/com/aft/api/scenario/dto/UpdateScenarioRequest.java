@@ -1,8 +1,8 @@
 package com.aft.api.scenario.dto;
 
 import com.aft.common.enums.ScenarioStatus;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public record UpdateScenarioRequest(
-        @NotBlank String name , String description , @NotBlank ScenarioStatus status
+        @NotNull String name , String description , @NotNull ScenarioStatus status
 ) {}

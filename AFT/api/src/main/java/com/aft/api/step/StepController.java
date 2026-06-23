@@ -16,8 +16,8 @@ import java.util.UUID;
 public class StepController {
     private final StepService service;
 
-    @GetMapping("/steps")
-    public ApiResponse<List<StepResponse>> list(@PathVariable UUID scenarioId){
+    @GetMapping("/scenarios/{scenarioId}/steps")
+    public ApiResponse<List<StepResponse>> list(@PathVariable UUID scenarioId) {
         return ApiResponse.ok(service.listByScenario(scenarioId));
     }
 

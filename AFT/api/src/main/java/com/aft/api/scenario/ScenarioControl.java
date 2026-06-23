@@ -27,8 +27,9 @@ public class ScenarioControl {
     public ApiResponse<ScenarioResponse> get(@PathVariable UUID id) {return ApiResponse.ok(service.get(id));}
 
     @PostMapping
-    public ApiResponse<ScenarioResponse> create(@RequestBody UUID moduleId ,CreateScenarioRequest req){
-        return ApiResponse.ok(service.create(moduleId,req));
+    public ApiResponse<ScenarioResponse> create(@RequestParam UUID moduleId,
+                                                @Valid @RequestBody CreateScenarioRequest req) {
+        return ApiResponse.ok(service.create(moduleId, req));
     }
 
     @PutMapping("/{id}")

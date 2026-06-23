@@ -52,5 +52,28 @@ public class ExecutionService {
 
         });
         return new RunResponse(runId,run.getStatus(),total);
+
+    }
+
+    @Transactional
+    public UUID triggerSystem(UUID scenarioId) {
+        Scenario scenario = scenarios.findById(scenarioId)
+                .orElseThrow(()-> new NotFoundException("Senaryo bulunamadı"));
+
+        int total = steps.countByScenario_Id(scenarioId);
+        TestRun run = testRuns.save(TestRun.builder()
+                .scenario(scenario)
+                .status(RunStatus.QUEUED)
+                .totalSteps(total)
+                .passedSteps(0)
+                .build());
+
+        UUID runId = run.getId();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization()  {
+            @Override public void afterCommit(){
+                rabbit.convertAndSend(RunQueue.NAME, runId.toString());
+            }
+        });
+        return runId;
     }
 }

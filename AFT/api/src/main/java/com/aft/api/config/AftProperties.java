@@ -1,6 +1,5 @@
 package com.aft.api.config;
 
-import io.jsonwebtoken.Jwt;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "aft")
