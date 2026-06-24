@@ -1,0 +1,139 @@
+/* Paylaşılan UI bileşenleri — tüm ekranlar bunları kullanır */
+
+/* ---- Buton ---- */
+.btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    height:44px; padding:0 18px; border:1px solid transparent; border-radius:var(--radius-md);
+    font-weight:700; font-size:14px; white-space:nowrap; transition:filter .15s, background .15s, border-color .15s;
+}
+.btn:active { transform:translateY(1px); }
+.btn--primary { background:var(--orange); color:#fff; }
+.btn--primary:hover { filter:brightness(1.05); }
+.btn--ghost { background:transparent; color:var(--fg-2); border-color:var(--border); }
+.btn--ghost:hover { background:var(--bg-2); }
+.btn--soft { background:var(--orange-tint); color:var(--orange); }
+.btn--soft:hover { filter:brightness(.97); }
+.btn--danger { background:var(--red); color:#fff; }
+.btn--block { width:100%; }
+.btn--sm { height:36px; padding:0 12px; font-size:13px; }
+.btn--icon { width:44px; padding:0; }
+.btn:disabled { opacity:.55; cursor:not-allowed; }
+
+/* ---- Form alanı ---- */
+.field { display:flex; flex-direction:column; gap:7px; }
+.field > label { font-weight:600; font-size:13px; color:var(--fg-2); }
+.input {
+    height:46px; padding:0 14px; width:100%;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
+    transition:border-color .15s, box-shadow .15s;
+}
+.input::placeholder { color:var(--fg-3); }
+.input:focus { outline:none; border-color:var(--orange); box-shadow:0 0 0 3px var(--orange-tint); }
+.input--invalid { border-color:var(--red); }
+.input-wrap { position:relative; }
+.input-wrap .input { padding-right:46px; }
+.input-affix {
+    position:absolute; right:6px; top:50%; transform:translateY(-50%);
+    width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+    color:var(--fg-3); background:none; border:none; border-radius:8px;
+}
+.input-affix:hover { background:var(--bg-2); color:var(--fg-2); }
+.field-error { font-size:12px; color:var(--red); }
+
+/* ---- Kart ---- */
+.card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-lg); box-shadow:var(--shadow);
+}
+.card--pad { padding:22px; }
+
+/* ---- Badge / durum etiketi ---- */
+.badge {
+    display:inline-flex; align-items:center; gap:6px;
+    height:24px; padding:0 10px; border-radius:var(--radius-pill);
+    font-size:12px; font-weight:700;
+}
+.badge--success { background:var(--green-tint); color:var(--green-strong); }
+.badge--fail { background:var(--red-tint); color:var(--red-strong); }
+.badge--info { background:var(--blue-tint); color:var(--blue-strong); }
+.badge--neutral { background:var(--bg-3); color:var(--fg-3); }
+.badge--dot::before { content:""; width:7px; height:7px; border-radius:99px; background:currentColor; }
+
+/* ---- İlerleme çubuğu ---- */
+.progress { height:8px; background:var(--bg-3); border-radius:99px; overflow:hidden; }
+.progress > i { display:block; height:100%; background:var(--green); border-radius:99px; transition:width .3s; }
+.progress--fail > i { background:var(--red); }
+
+/* ---- Tablo ---- */
+.table { width:100%; border-collapse:collapse; }
+.table th {
+    text-align:left; font-size:12px; font-weight:700; color:var(--fg-3);
+    text-transform:uppercase; letter-spacing:.04em; padding:12px 16px; border-bottom:1px solid var(--border);
+}
+.table td { padding:14px 16px; border-bottom:1px solid var(--border); font-size:14px; }
+.table tr:last-child td { border-bottom:none; }
+.table tbody tr:hover { background:var(--bg-2); }
+
+/* ---- Divider ---- */
+.divider { display:flex; align-items:center; gap:14px; color:var(--fg-3); font-size:13px; }
+.divider::before, .divider::after { content:""; flex:1; height:1px; background:var(--border); }
+
+/* ---- Modal ---- */
+.modal-overlay {
+    position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center;
+    padding:20px; background:rgba(8,12,18,.55); backdrop-filter:blur(2px);
+    animation:fade .15s ease;
+}
+.modal {
+    width:100%; max-width:520px; max-height:90vh; overflow:auto;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-lg); box-shadow:var(--shadow-lg);
+    animation:pop .18s ease;
+}
+.modal__head { display:flex; align-items:center; justify-content:space-between; padding:20px 22px; border-bottom:1px solid var(--border); }
+.modal__title { font-size:18px; }
+.modal__body { padding:22px; }
+.modal__foot { display:flex; justify-content:flex-end; gap:10px; padding:18px 22px; border-top:1px solid var(--border); }
+
+@keyframes fade { from{opacity:0} to{opacity:1} }
+@keyframes pop { from{opacity:0; transform:translateY(8px) scale(.98)} to{opacity:1; transform:none} }
+
+/* ---- Toast ---- */
+#toast-host { position:fixed; right:18px; bottom:18px; z-index:2000; display:flex; flex-direction:column; gap:10px; }
+.toast {
+    display:flex; align-items:center; gap:10px; min-width:260px; max-width:380px;
+    padding:13px 15px; border-radius:var(--radius-md); box-shadow:var(--shadow-lg);
+    background:var(--surface); border:1px solid var(--border); color:var(--fg);
+    font-weight:600; animation:slidein .2s ease;
+}
+.toast--success { border-left:4px solid var(--green); }
+.toast--error { border-left:4px solid var(--red); }
+.toast--info { border-left:4px solid var(--blue); }
+@keyframes slidein { from{opacity:0; transform:translateX(20px)} to{opacity:1; transform:none} }
+
+/* ---- Brand logo ---- */
+.brand { display:inline-flex; align-items:center; gap:10px; font-family:var(--font-display); font-weight:800; font-size:18px; letter-spacing:-.02em; }
+.brand__mark { width:30px; height:30px; border-radius:9px; background:var(--orange); display:flex; align-items:center; justify-content:center; color:#fff; }
+
+/* ---- Auth ekranları ortak ---- */
+.auth { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:var(--bg-2); }
+.auth__card { width:100%; max-width:420px; }
+.auth__card .card { padding:30px; }
+.auth__title { font-size:24px; margin-bottom:4px; }
+.auth__sub { color:var(--fg-3); margin-bottom:24px; }
+.auth__foot { text-align:center; margin-top:18px; color:var(--fg-3); font-size:13px; }
+.auth__foot a { color:var(--orange); font-weight:700; }
+
+/* ---- OTP girişi ---- */
+.otp { display:flex; gap:10px; justify-content:space-between; }
+.otp input {
+    width:100%; height:56px; text-align:center; font-size:22px; font-weight:700;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
+}
+.otp input:focus { outline:none; border-color:var(--orange); box-shadow:0 0 0 3px var(--orange-tint); }
+
+/* ---- Adım göstergesi ---- */
+.steps { display:flex; align-items:center; gap:8px; margin-bottom:24px; }
+.steps .dot { width:9px; height:9px; border-radius:99px; background:var(--border-2); transition:background .2s, width .2s; }
+.steps .dot.active { width:26px; background:var(--orange); }
+.steps .dot.done { background:var(--green); }
