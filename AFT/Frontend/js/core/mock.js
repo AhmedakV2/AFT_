@@ -11,8 +11,75 @@ function fakeJwt(email) {                                         // userFromTok
 }
 const authResp = (email) => ({ accessToken: fakeJwt(email), refreshToken: 'mock.rt.' + Date.now(), tokenType: 'Bearer', expiresInSeconds: 1800 });
 
+// ---- Proje verisi: bellek-içi store + yardımcılar ----
+const uid = () => crypto.randomUUID();
+const nowIso = () => new Date().toISOString();
+const pageOf = (content) => ({ content, totalElements: content.length, totalPages: 1, number: 0 });
+
+const projDb = {
+    projects: [
+        { id: uid(), name: 'E-ticaret Testleri', description: 'Ödeme ve sepet akışları', baseUrl: 'https://shop.example.com', cardColor: '#ef6c1a', createdAt: nowIso() },
+        { id: uid(), name: 'Bankacılık', description: 'Giriş ve oturum doğrulama', baseUrl: 'https://bank.example.com', cardColor: '#2f6fb0', createdAt: nowIso() },
+    ],
+    modules: [],      // {id, projectId, name, description, createdAt}
+    scenarios: [],    // {id, moduleId, name, description, status, createdAt}
+};
+
+// Gerçek backend sözleşmesi (flat): modül/senaryo create query param, listeleme query filtreli
+function mockProjects(method, fullPath, body) {
+    const [path, qs = ''] = fullPath.split('?');
+    const q = new URLSearchParams(qs);
+    const seg = path.split('/').filter(Boolean);                 // ['api','v1','projects',...]
+
+    // Projeler
+    if (path === '/api/v1/projects') {
+        if (method === 'GET') return pageOf(projDb.projects);
+        if (method === 'POST') { const p = { id: uid(), ...body, createdAt: nowIso() }; projDb.projects.unshift(p); return p; }
+    }
+
+    // Modüller (/api/v1/modules?projectId=)
+    if (path === '/api/v1/modules') {
+        if (method === 'GET') {
+            const pid = q.get('projectId');
+            return pageOf(projDb.modules.filter((m) => !pid || m.projectId === pid));
+        }
+        if (method === 'POST') {
+            const m = { id: uid(), projectId: q.get('projectId'), ...body, createdAt: nowIso() };
+            projDb.modules.push(m); return m;
+        }
+    }
+
+    // Senaryolar (/api/v1/scenarios?moduleId=)
+    if (path === '/api/v1/scenarios') {
+        if (method === 'GET') {
+            const mid = q.get('moduleId');
+            return pageOf(projDb.scenarios.filter((s) => !mid || s.moduleId === mid));
+        }
+        if (method === 'POST') {
+            const s = { id: uid(), moduleId: q.get('moduleId'), ...body, status: body.status || 'DRAFT', createdAt: nowIso() };
+            projDb.scenarios.unshift(s); return s;
+        }
+    }
+
+    // Senaryo status (/api/v1/scenarios/{id}/status)
+    if (method === 'PATCH' && seg[2] === 'scenarios' && seg[4] === 'status') {
+        const s = projDb.scenarios.find((x) => x.id === seg[3]);
+        if (s) { s.status = body.status; return s; }
+    }
+
+    // Senaryo çalıştır (/api/v1/scenarios/{id}/run)
+    if (method === 'POST' && seg[2] === 'scenarios' && seg[4] === 'run') {
+        return { runId: uid(), status: 'QUEUED' };
+    }
+
+    return undefined;
+}
+
 export async function mockApi(method, path, body) {
     await wait();
+    const proj = mockProjects(method, path, body);               // önce proje uçlarını dene
+    if (proj !== undefined) return proj;
+
     const key = `${method} ${path}`;
     switch (key) {
         case 'POST /auth/register':

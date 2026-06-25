@@ -21,8 +21,11 @@ public class ModuleController {
 
     private final ModuleService service;
 
+
     @GetMapping
-    public ApiResponse<Page<ModuleResponse>> list(Pageable pageable) {return ApiResponse.ok(service.list(pageable));}
+    public ApiResponse<Page<ModuleResponse>> list(@RequestParam(required = false) UUID projectId, Pageable pageable) {
+        return ApiResponse.ok(projectId == null ? service.list(pageable) : service.listByProject(projectId, pageable));
+    }
 
     @GetMapping("/{id}")
     public ApiResponse<ModuleResponse> get(@PathVariable UUID id) { return ApiResponse.ok(service.get(id));}

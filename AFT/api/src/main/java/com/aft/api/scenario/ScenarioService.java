@@ -31,6 +31,11 @@ public class ScenarioService {
         return scenarios.findByModule_Project_User_Id(userId, pageable).map(mapper::toResponse);
     }
 
+    public Page<ScenarioResponse> listByModule(UUID moduleId, Pageable pageable) {
+        UUID userId = SecurityUtils.currentUserId();
+        return scenarios.findByModule_IdAndModule_Project_User_Id(moduleId, userId, pageable).map(mapper::toResponse);
+    }
+
     public ScenarioResponse get(UUID scenarioId) { return mapper.toResponse(findOwned(scenarioId)); }
 
     @Transactional
@@ -41,7 +46,7 @@ public class ScenarioService {
                 .module(module)
                 .name(req.name())
                 .description(req.description())
-                .status(ScenarioStatus.DRAFT)
+                .status(req.status())
                 .build());
         return mapper.toResponse(saved);
     }

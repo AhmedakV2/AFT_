@@ -29,6 +29,11 @@ public class ModuleService {
         return modules.findByProject_User_Id(userId, pageable).map(mapper::toResponse);
     }
 
+    public Page<ModuleResponse> listByProject(UUID projectId, Pageable pageable){
+        UUID userId = SecurityUtils.currentUserId();
+        return modules.findByProject_IdAndProject_User_Id(projectId, userId, pageable).map(mapper::toResponse);
+    }
+
     public ModuleResponse get(UUID id) {
         return mapper.toResponse(findOwned(id));
     }

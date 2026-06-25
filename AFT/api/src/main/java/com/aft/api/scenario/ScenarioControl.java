@@ -21,7 +21,9 @@ public class ScenarioControl {
     private final ScenarioService service;
 
     @GetMapping
-    public ApiResponse<Page<ScenarioResponse>> list (Pageable pageable) {return ApiResponse.ok(service.list(pageable));}
+    public ApiResponse<Page<ScenarioResponse>> list(@RequestParam(required = false) UUID moduleId, Pageable pageable) {
+        return ApiResponse.ok(moduleId == null ? service.list(pageable) : service.listByModule(moduleId, pageable));
+    }
 
     @GetMapping("/{id}")
     public ApiResponse<ScenarioResponse> get(@PathVariable UUID id) {return ApiResponse.ok(service.get(id));}
