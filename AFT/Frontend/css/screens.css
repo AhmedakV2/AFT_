@@ -141,7 +141,7 @@
     width:40px; height:40px; border-radius:11px; color:#fff;
     display:grid; place-items:center; font:800 18px var(--font-display); margin-bottom:4px;
 }
-.proj-card__name { font-size:17px; font-weight:700; }
+.proj-card__name { color:var(--fg-3)   ;font-size:17px; font-weight:700; }
 .proj-card__desc { color:var(--fg-3); font-size:13.5px; line-height:1.4; flex:1;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .proj-card__url { display:flex; align-items:center; gap:6px; color:var(--fg-3);
@@ -194,3 +194,40 @@
     .app[data-sidebar="collapsed"] .sidebar { width:var(--sidebar-w); }
     .content { padding:20px 16px; }
 }
+
+/* Sağdan açılan drawer (aksiyon ekleme paneli) */
+.drawer-scrim {
+    position: fixed; inset: 0; z-index: 70;
+    background: rgba(0, 0, 0, .45);
+    opacity: 0; transition: opacity .25s ease;
+}
+.drawer-scrim.open { opacity: 1; }
+
+.drawer {
+    position: fixed; top: 0; right: 0; z-index: 71;
+    width: 420px; max-width: 92vw; height: 100%;
+    background: var(--surface); border-left: 1px solid var(--border);
+    box-shadow: -8px 0 30px rgba(0, 0, 0, .18);
+    display: flex; flex-direction: column;
+    transform: translateX(100%); transition: transform .28s cubic-bezier(.4, 0, .2, 1);
+}
+.drawer.open { transform: translateX(0); }
+
+.drawer__head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 22px; border-bottom: 1px solid var(--border);
+}
+.drawer__head h3 { margin: 0; font: 700 17px var(--font-ui); color: var(--fg); }
+.drawer__body { flex: 1; overflow-y: auto; padding: 22px; }
+.drawer__foot { padding: 16px 22px; border-top: 1px solid var(--border); }
+
+@media (max-width: 480px) { .drawer { width: 100%; } }
+
+/* Kart üzerindeki silme butonu (sağ üst köşe) */
+.proj-card { position: relative; }
+.proj-card__del {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    opacity: 0; transition: opacity .15s; color: var(--fg-3);
+}
+.proj-card:hover .proj-card__del { opacity: 1; }
+.proj-card__del:hover { color: var(--danger, #e03e3e); background: var(--bg-2); }

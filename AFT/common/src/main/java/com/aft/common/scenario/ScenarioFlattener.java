@@ -24,7 +24,6 @@ public class ScenarioFlattener {
         return out;
     }
 
-
     public int countFlattened(UUID scenarioId) {
         return flatten(scenarioId).size();
     }

@@ -21,7 +21,6 @@ public class RunStateService {
     private final StepResultRepository stepResults;
     private final StepRepository steps;
 
-
     @Transactional
     public UUID startRun(UUID testRunId){
         TestRun run = testRuns.findById(testRunId)

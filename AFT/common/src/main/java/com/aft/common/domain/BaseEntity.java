@@ -11,7 +11,6 @@ import java.util.UUID;
 @MappedSuperclass
 public  abstract class BaseEntity {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -19,7 +18,5 @@ public  abstract class BaseEntity {
     @CreationTimestamp
     @Column(name = "created_at",updatable = false)
     private Instant  createdAt;
-
-
 
 }

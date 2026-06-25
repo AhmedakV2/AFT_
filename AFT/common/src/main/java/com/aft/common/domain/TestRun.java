@@ -30,4 +30,5 @@ public class TestRun extends BaseEntity{
 
     @Column(name = "passed_steps",nullable = false)
     private int passedSteps;
+
 }

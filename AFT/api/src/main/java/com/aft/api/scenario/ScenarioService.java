@@ -8,6 +8,8 @@ import com.aft.api.scenario.dto.CreateScenarioRequest;
 import com.aft.api.scenario.dto.ScenarioResponse;
 import com.aft.api.scenario.dto.UpdateScenarioRequest;
 import com.aft.common.domain.Scenario;
+import com.aft.common.domain.Step;
+import com.aft.common.enums.ActionType;
 import com.aft.common.enums.ScenarioStatus;
 import com.aft.common.repository.ModuleRepository;
 import com.aft.common.repository.ScenarioRepository;
@@ -55,15 +57,29 @@ public class ScenarioService {
 
     @Transactional
     public ScenarioResponse create(UUID moduleId, CreateScenarioRequest req) {
-        Module module = modules.findByIdAndProject_User_Id(moduleId, SecurityUtils.currentUserId())
-                .orElseThrow(() -> new NotFoundException("Module bulunamadı"));
+        UUID userId = SecurityUtils.currentUserId();
+        Module module = modules.findByIdAndProject_User_Id(moduleId, userId)
+                .orElseThrow(() -> new NotFoundException("Modül bulunamadı"));
+
         Scenario saved = scenarios.save(Scenario.builder()
                 .module(module)
                 .name(req.name())
                 .description(req.description())
-                .status(req.status())
+                .status(req.status() != null ? req.status() : ScenarioStatus.DRAFT)
                 .build());
+
+        String baseUrl = module.getProject().getBaseUrl();
+        if (baseUrl != null && !baseUrl.isBlank()) {
+            steps.save(Step.builder()
+                    .scenario(saved)
+                    .stepOrder(1)
+                    .action(ActionType.NAVIGATE)
+                    .value(baseUrl)
+                    .selectors(java.util.Map.of())
+                    .build());
+        }
         return mapper.toResponse(saved);
+
     }
 
     @Transactional

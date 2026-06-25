@@ -10,9 +10,9 @@ import lombok.*;
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor @Builder
 public class User extends BaseEntity {
+
     @Column(nullable = false, unique = true)
     private String email;
-
 
     @Column
     private String phone;

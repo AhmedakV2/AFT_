@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitConfig {
+
     public static final String DLX = "aft.scenario.run.dlx";
     public static final String DLQ = "aft.scenario.run.dlq";
 

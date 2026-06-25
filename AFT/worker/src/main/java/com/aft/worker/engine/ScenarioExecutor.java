@@ -24,7 +24,6 @@ public class ScenarioExecutor {
     private final MeterRegistry metrics;
     private final ScenarioFlattener flattener;
 
-
     public void execute(UUID testRunId) {
         UUID scenarioId = state.startRun(testRunId);
         List<Step> stepList = flattener.flatten(scenarioId);

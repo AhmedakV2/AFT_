@@ -1,10 +1,7 @@
 package com.aft.api.step;
 
 import com.aft.api.common.ApiResponse;
-import com.aft.api.step.dto.IncludeScenarioRequest;
-import com.aft.api.step.dto.ReorderStepsRequest;
-import com.aft.api.step.dto.StepResponse;
-import com.aft.api.step.dto.UpdateStepRequest;
+import com.aft.api.step.dto.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +28,11 @@ public class StepController {
     @PatchMapping("/scenarios/{scenarioId}/steps/reorder")
     public ApiResponse<List<StepResponse>> reorder(@PathVariable UUID scenarioId, @Valid @RequestBody ReorderStepsRequest req) {
         return ApiResponse.ok(service.reorder(scenarioId, req.orderedStepIds()));
+    }
+
+    @PostMapping("/scenarios/{scenarioId}/steps")
+    public ApiResponse<StepResponse> create(@PathVariable UUID scenarioId, @Valid @RequestBody CreateStepRequest req) {
+        return ApiResponse.ok(service.create(scenarioId, req));
     }
 
     @PatchMapping("/steps/{stepId}")

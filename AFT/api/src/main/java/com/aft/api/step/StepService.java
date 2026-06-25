@@ -3,8 +3,9 @@ package com.aft.api.step;
 import com.aft.api.common.exception.ApiException;
 import com.aft.api.common.exception.NotFoundException;
 import com.aft.api.common.security.SecurityUtils;
+import com.aft.api.step.dto.CreateStepRequest;
 import com.aft.api.step.dto.StepResponse;
-import com.aft.api.step.dto.UpdateStepRequest;      // eksikti
+import com.aft.api.step.dto.UpdateStepRequest;
 import com.aft.common.domain.Scenario;
 import com.aft.common.domain.Step;
 import com.aft.common.enums.ActionType;
@@ -12,7 +13,6 @@ import com.aft.common.repository.ScenarioRepository;
 import com.aft.common.repository.StepRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -112,6 +112,26 @@ public class StepService {
         steps.flush();
 
         return steps.findByScenario_IdOrderByStepOrderAsc(scenarioId).stream().map(this::enrich).toList();
+    }
+
+    @Transactional
+    public StepResponse create(UUID scenarioId, CreateStepRequest req) {
+        UUID userId = SecurityUtils.currentUserId();
+        Scenario scenario=scenarios.findByIdAndModule_Project_User_Id(scenarioId, userId)
+                .orElseThrow(()-> new NotFoundException("Senaryo bulunamadi"));
+        if(req.action() == ActionType.INCLUDE_SCENARIO){
+            throw new ApiException("Kalıtım adımı buradan eklenemez",HttpStatus.BAD_REQUEST);
+        }
+
+        int order = steps.findMaxOrder(scenarioId) + 1;
+        Step saved = steps.save(Step.builder()
+                .scenario(scenario)
+                .action(req.action())
+                .selectors(req.selectors())
+                .value(req.value())
+                .stepOrder(order)
+                .build());
+        return mapper.toResponse(saved);
     }
 
     private StepResponse enrich(Step s) {

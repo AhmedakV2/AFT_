@@ -7,6 +7,7 @@ import lombok.*;
 @Table(name = "projects")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Project extends BaseEntity{
+
     @ManyToOne(fetch= FetchType.LAZY,optional = false)
     @JoinColumn(name= "user_Id")
     private User user;

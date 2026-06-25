@@ -9,6 +9,7 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 public class RunEventPublisher {
+
     public static final String EXCHANGE = "aft.run.events";
     private final RabbitTemplate rabbit;
 

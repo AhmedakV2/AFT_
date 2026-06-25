@@ -50,10 +50,10 @@ export function features() {
         el('div', { style: 'display:grid; grid-template-columns:repeat(3, 1fr); gap:24px;' },
             Card('<circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/>', 'Kaydet & Oynat', 'Chrome eklentisiyle ekranda yaptığın adımları yakala, kodsuz senaryolara dönüştür.', 'orange'),
             Card('<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>', 'No-code Senaryolar', 'Adımları sürükle-bırak düzenle, taslak ve hazır durumlarıyla yönet.', 'blue'),
-            Card('<path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/>', 'RESTful Veri Akışı', 'Veriler arka planda işlenir ve tıpkı Selenium + Cucumber gibi çalıştırılır.', 'green'),
-            Card('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>', 'Token Güvenliği', 'Token tabanlı doğrulama ile güvenli oturum yönetimi ve veri akışı.', 'blue'),
+            Card('<path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/>', 'Dahil Edilebilen Senaryolar', 'Başka senaryoları dahil ederek daha karmaşık test senaryoları oluştur.', 'green'),
             Card('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>', 'Zamanlanmış Görevler', 'Testleri planla, gelecek çalıştırmaları izle, gece koşularını otomatikleştir.', 'orange'),
             Card('<path d="M18 20V10M12 20V4M6 20v-6"/><path d="M3 20h18"/>', 'Detaylı Raporlar', 'Başarı yüzdesi, hata görselleri ve adım sonuçları; Excel ve PDF olarak dışa aktar.', 'green'),
+            Card('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>', 'Güvenlik', 'Güçlü şifreleme ile veri güvenliği sağlanır.', 'blue'),
         )
     );
 }
@@ -98,7 +98,7 @@ export function guide() {
         sectionHeader('KULLANIM REHBERİ', 'Sistemi nasıl kullanırsın?', 'Hesabını oluşturduktan sonra ilk otomasyonun beş adımda hazır. Tek satır kod yazmadan.'),
         el('div', { style: 'display:grid; grid-template-columns:1.05fr 0.95fr; gap:64px; align-items:center;' },
             el('div', { style: 'display:flex; flex-direction:column; align-items:center;' },
-                stepBox('1', 'Proje oluştur', "Panelde test edeceğin uygulama için bir proje aç, base URL'i gir.", 'orange'),
+                stepBox('1', 'Proje oluştur', "Panelde test edeceğin uygulama için bir proje aç,rengini belirle.base URL'i gir. ", 'orange'),
                 arrowDown(),
                 stepBox('2', 'Eklentiyle adımları kaydet', 'Chrome eklentisini aç, "Kaydet"e bas ve uygulamada normal kullanımını yap — her tıklama ve giriş yakalanır.', 'blue'),
                 arrowDown(),
@@ -172,7 +172,7 @@ export function extensionSection() {
                             el('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'var(--orange)', html: '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>' }),
                             el('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'var(--orange)', html: '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>' })
                         ),
-                        el('span', { style: 'font:500 13px "Manrope"; color:var(--fg-3);' }, '4.9 · 1.200+ kurulum')
+                        el('span', { style: 'font:500 13px "Manrope"; color:var(--fg-3);' }, 'Değerlendir')
                     )
                 ),
                 el('div', { style: 'display:flex; flex-wrap:wrap; gap:20px; margin-bottom:24px;' },
@@ -180,7 +180,7 @@ export function extensionSection() {
                     el('span', { style: 'display:inline-flex; align-items:center; gap:8px; font:500 14px "Manrope"; color:var(--fg-2);' }, el('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--green)', 'stroke-width': '2.5', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', html: '<path d="M20 6L9 17l-5-5"/>' }), 'Manifest V3'),
                     el('span', { style: 'display:inline-flex; align-items:center; gap:8px; font:500 14px "Manrope"; color:var(--fg-2);' }, el('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'var(--green)', 'stroke-width': '2.5', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', html: '<path d="M20 6L9 17l-5-5"/>' }), 'Edge & Brave uyumlu')
                 ),
-                el('p', { style: 'font:500 13px "Manrope"; color:var(--fg-3); margin:0;' }, 'Sürüm 2.4.1 · 1,8 MB · Tüm güncellemeler otomatik')
+                el('p', { style: 'font:500 13px "Manrope"; color:var(--fg-3); margin:0;' }, 'Beta Sürümü 0.2 · 2026 © aft.io')
             ),
             el('div', { class: CARD_ANIM, style: 'background:var(--surface); border:1px solid var(--border); border-radius:24px; box-shadow:var(--shadow-lg); overflow:hidden;' },
                 el('div', { style: 'height:180px; background:var(--blue-strong); position:relative; display:grid; place-items:center;' },
@@ -298,13 +298,13 @@ export function pricing() {
         sectionHeader('FİYATLANDIRMA', 'İhtiyacınıza uygun planı seçin'),
         el('div', { style: 'display:grid; grid-template-columns:repeat(3, 1fr); gap:32px; align-items:start;' },
             planCard('Başlangıç', '₺000', 'Küçük projeler ve bireysel kullanım için.', 'Ücretsiz Başla', [
-                '1 proje',
-                'Ayda 100 çalıştırma',
+                '10 proje',
+                'Günde 100 çalıştırma',
                 'Topluluk desteği'
             ], false),
-            planCard('Profesyonel', '₺000', 'Büyüyen ekipler ve düzenli otomasyon testleri için.', '14 Gün Dene', [
-                '10 proje',
-                'Sınırsız çalıştırma',
+            planCard('Profesyonel', '₺000', 'Büyüyen ekipler ve düzenli otomasyon testleri için.', '7 Gün Dene', [
+                '50 proje',
+                'Günde 500 çalıştırma',
                 'Zamanlanmış görevler',
                 'Öncelikli destek'
             ], true),
@@ -345,7 +345,6 @@ export function landingScreen() {
             el('p', { style: "font:400 18px/1.6 'Manrope'; color:var(--fg-3); margin:24px 0 40px; max-width:680px;" }, 'Chrome eklentisiyle aksiyonlarını kaydet, AFT bunları arka planda otomatik çalıştırsın. Senaryo yaz, zamanla, raporla.'),
             el('div', { style: 'display:flex; gap:16px;' },
                 el('button', { class: 'press hover-lift', style: "height:56px; padding:0 32px; border-radius:12px; border:none; background:var(--orange); color:#fff; font:700 16px 'Manrope'; cursor:pointer; box-shadow:0 8px 24px color-mix(in srgb, var(--orange) 32%, transparent);", onClick: () => navigate('/register') }, 'Ücretsiz Başla'),
-                el('button', { class: 'press hover-lift', style: "height:56px; padding:0 32px; border-radius:12px; border:1px solid var(--border-2); background:var(--surface); color:var(--fg); font:700 16px 'Manrope'; cursor:pointer;", onClick: () => navigate('/login') }, 'Demoyu İzle')
             )
         ),
 
@@ -404,7 +403,7 @@ export function landingScreen() {
                 )
             ),
             el('div', { style: 'max-width:1200px; margin:0 auto; padding:32px 24px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;' },
-                el('span', { style: 'font:500 14px "Manrope"; color:var(--fg-3); text-align:center;' }, '© ' + new Date().getFullYear() + ' AFT Automation. Tüm hakları saklıdır.'),
+                el('span', { style: 'font:500 14px "Manrope"; color:var(--fg-3);' }, '© ' + new Date().getFullYear() + ' AFT Automation. Tüm hakları saklıdır.'),
             )
         )
     );

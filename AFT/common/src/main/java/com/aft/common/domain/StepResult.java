@@ -34,4 +34,5 @@ public class StepResult {
 
     @Column(name = "executed_at",nullable = false)
     private Instant executedAt;
+
 }

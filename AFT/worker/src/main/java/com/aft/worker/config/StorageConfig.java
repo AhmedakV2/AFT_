@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @RequiredArgsConstructor
 public class StorageConfig {
+
     private final WorkerProperties props;
 
     @Bean
@@ -17,4 +18,5 @@ public class StorageConfig {
                 .credentials(props.storage().accessKey(), props.storage().secretKey())
                 .build();
     }
+
 }

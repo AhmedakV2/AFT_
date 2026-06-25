@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class StepInterpreter {
+
     private static final int DEFAULT_WAIT = 10 ;
     private final ElementLocator locator;
 
@@ -22,7 +23,6 @@ public class StepInterpreter {
             case REFRESH -> driver.navigate().refresh();
 
             case CLICK -> element(driver,step).click();
-
 
             case TYPE -> {
                 WebElement el = element(driver,step);

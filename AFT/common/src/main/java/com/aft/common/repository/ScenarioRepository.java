@@ -18,8 +18,5 @@ public interface ScenarioRepository extends JpaRepository<Scenario, UUID> {
 
     Page<Scenario> findByModule_Project_IdAndIdNotAndModule_Project_User_Id(UUID projectId, UUID excludeScenarioId, UUID userId, Pageable pageable);
 
-    Page<Scenario> findByModule_Project_User_IdAndNameContainingIgnoreCase(UUID userId, String query, Pageable pageable);
-
-    Page<Scenario> findByModule_Project_IdAndModule_Project_User_Id(UUID projectId, UUID userId, Pageable pageable);
 }
 

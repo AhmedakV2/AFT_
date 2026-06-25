@@ -8,6 +8,34 @@ import { toast } from '../components/toast.js';
 // 5 kart rengi (ayarlardaki aksan paletiyle aynı)
 const CARD_COLORS = ['#ef6c1a', '#2f6fb0', '#1f9d57', '#7c5cdb', '#e0a106'];
 
+// Sistemde kayıtlı aksiyon tipleri (INCLUDE_SCENARIO hariç; o "Kalıtım Al"dan eklenir)
+const ACTION_GROUPS = [
+    { label: 'Navigasyon', items: [['NAVIGATE', 'Sayfaya git'], ['NAVIGATE_BACK', 'Geri'], ['NAVIGATE_FORWARD', 'İleri'], ['REFRESH', 'Yenile']] },
+    { label: 'Etkileşim', items: [['CLICK', 'Tıkla'], ['DOUBLE_CLICK', 'Çift tıkla'], ['RIGHT_CLICK', 'Sağ tıkla'], ['HOVER', 'Üzerine gel'], ['TYPE', 'Metin yaz'], ['TYPE_SECRET', 'Gizli metin yaz'], ['CLEAR', 'Temizle'], ['SELECT_OPTION', 'Seçenek seç'], ['PRESS_KEY', 'Tuşa bas'], ['UPLOAD_FILE', 'Dosya yükle']] },
+    { label: 'Kaydırma', items: [['SCROLL_TO_ELEMENT', 'Elemana kaydır'], ['SCROLL_TO_TOP', 'En üste kaydır'], ['SCROLL_TO_BOTTOM', 'En alta kaydır']] },
+    { label: 'Bekleme', items: [['WAIT_SECONDS', 'Saniye bekle'], ['WAIT_FOR_VISIBLE', 'Görünür olmasını bekle'], ['WAIT_FOR_CLICKABLE', 'Tıklanabilir olmasını bekle'], ['WAIT_FOR_TEXT', 'Metin gelmesini bekle'], ['WAIT_FOR_URL', 'URL değişimini bekle']] },
+    { label: 'Doğrulama', items: [['ASSERT_VISIBLE', 'Görünür mü?'], ['ASSERT_NOT_VISIBLE', 'Gizli mi?'], ['ASSERT_TEXT_EQUALS', 'Metin eşit mi?'], ['ASSERT_TEXT_CONTAINS', 'Metin içeriyor mu?'], ['ASSERT_URL_CONTAINS', 'URL içeriyor mu?']] },
+    { label: 'Diğer', items: [['SCREENSHOT', 'Ekran görüntüsü'], ['LOG_MESSAGE', 'Log mesajı']] },
+];
+
+// Eleman seçicisi gerektirmeyen aksiyonlar
+const NO_SELECTOR = new Set(['NAVIGATE', 'NAVIGATE_BACK', 'NAVIGATE_FORWARD', 'REFRESH', 'SCROLL_TO_TOP', 'SCROLL_TO_BOTTOM', 'WAIT_SECONDS', 'WAIT_FOR_URL', 'ASSERT_URL_CONTAINS', 'SCREENSHOT', 'LOG_MESSAGE']);
+
+// Değer alanı gerektirmeyen aksiyonlar (sadece eleman lazım)
+const NO_VALUE = new Set(['CLICK', 'DOUBLE_CLICK', 'RIGHT_CLICK', 'HOVER', 'CLEAR', 'NAVIGATE_BACK', 'NAVIGATE_FORWARD', 'REFRESH', 'SCROLL_TO_ELEMENT', 'SCROLL_TO_TOP', 'SCROLL_TO_BOTTOM', 'ASSERT_VISIBLE', 'ASSERT_NOT_VISIBLE', 'SCREENSHOT']);
+
+// Aksiyona göre değer alanı placeholder'ı
+const VALUE_HINT = { NAVIGATE: 'https://...', TYPE: 'Yazılacak metin', TYPE_SECRET: 'Gizli değer', SELECT_OPTION: 'Seçilecek seçenek', PRESS_KEY: 'Enter, Tab, Escape...', WAIT_SECONDS: 'Saniye (örn. 2)', WAIT_FOR_TEXT: 'Beklenen metin', WAIT_FOR_URL: 'Beklenen URL parçası', ASSERT_TEXT_EQUALS: 'Beklenen metin', ASSERT_TEXT_CONTAINS: 'İçermesi gereken metin', ASSERT_URL_CONTAINS: 'URL parçası', LOG_MESSAGE: 'Mesaj', UPLOAD_FILE: 'Dosya yolu' };
+
+// Girilen değerin seçici tipini sezgisel algılar (XPath/CSS/ID)
+const detectSelector = (raw) => {
+    const v = raw.trim();
+    if (!v) return null;
+    if (v.startsWith('/') || v.startsWith('(')) return { xpath: v };   // XPath
+    if (/[.#\[\s>]/.test(v)) return { css: v };                         // CSS işareti var
+    return { id: v };                                                   // sade kelime → id
+};
+
 const fmtDate = (iso) => {
     try { return new Intl.DateTimeFormat('tr-TR', { dateStyle: 'medium' }).format(new Date(iso)); }
     catch { return iso || '—'; }
@@ -47,6 +75,22 @@ export function projectsScreen() {
                 : el('span', { class: 'muted' }, it.label),
         ].filter(Boolean)));
 
+    // Ortak silme onayı: kullanıcı onaylarsa fn çalışır
+    function confirmDelete(message, fn) {
+        const warn = el('p', { class: 'muted', style: 'margin:0 0 4px' }, message);
+        const cancelBtn = el('button', { class: 'btn btn--ghost press' }, 'Vazgeç');
+        const okBtn = el('button', { class: 'btn btn--danger press' }, icon('x', 16), 'Sil');
+        okBtn.onclick = async () => {
+            okBtn.disabled = true; okBtn.textContent = 'Siliniyor...';
+            try { await fn(); close(); } catch (err) { okBtn.disabled = false; okBtn.textContent = 'Sil'; toast(err.message || 'Silinemedi.', 'error'); }
+        };
+        cancelBtn.onclick = () => close();
+        const close = openModal(el('div', { class: 'col gap-4' },
+            warn,
+            el('div', { class: 'row gap-2', style: 'justify-content:flex-end' }, cancelBtn, okBtn),
+        ), { title: 'Silme Onayı' });
+    }
+
     const statusBadge = (s) => String(s).toUpperCase() === 'READY'
         ? el('span', { class: 'badge badge--success' }, 'Hazır')
         : el('span', { class: 'badge badge--neutral' }, 'Taslak');
@@ -71,14 +115,24 @@ export function projectsScreen() {
         // Kart: renk şeridi + ad + açıklama + baseUrl; tıklayınca modüllere geçer
         function projectCard(p) {
             const color = p.cardColor || p.card_color || 'var(--orange)';
+            const del = el('button', { class: 'btn btn--ghost btn--icon btn--sm press proj-card__del', title: 'Sil', onClick: (e) => { e.stopPropagation(); askDeleteProject(p); } }, icon('x', 15));
             return el('button', { class: 'proj-card press', onClick: () => { state.project = p; state.view = 'modules'; render(); } },
                 el('div', { class: 'proj-card__bar', style: `background:${color}` }),
+                del,
                 el('div', { class: 'proj-card__body' },
                     el('div', { class: 'proj-card__icon', style: `background:${color}` }, (p.name || '?').charAt(0).toUpperCase()),
                     el('h3', { class: 'proj-card__name' }, p.name || '—'),
                     el('p', { class: 'proj-card__desc' }, p.description || 'Açıklama yok'),
                     el('div', { class: 'proj-card__url' }, icon('layers', 14), p.baseUrl || p.base_url || '—'),
                 ));
+        }
+
+        // Proje silme onayı: modül, senaryo ve adımlar da silinir (cascade)
+        function askDeleteProject(p) {
+            confirmDelete(`"${p.name}" projesi ve içindeki tüm modül, senaryo ve adımlar kalıcı olarak silinecek. Onaylıyor musun?`, async () => {
+                await api.del(`/api/v1/projects/${p.id}`);
+                toast('Proje silindi.', 'success'); render();
+            });
         }
 
         // "Yeni proje" boş kartı
@@ -97,7 +151,7 @@ export function projectsScreen() {
             const swatches = el('div', { class: 'swatches' });
             const paint = () => swatches.replaceChildren(...CARD_COLORS.map((hex) =>
                 el('button', { class: 'swatch' + (picked === hex ? ' sel' : ''), style: `background:${hex}`, type: 'button', onClick: () => { picked = hex; paint(); } })));
-            paint();
+            paint()
 
             const submit = el('button', { class: 'btn btn--primary btn--block press' }, 'Oluştur');
             submit.onclick = async () => {
@@ -121,7 +175,7 @@ export function projectsScreen() {
             ), { title: 'Yeni Proje' });
         }
 
-        return el('div', {}, head('Projeler', 'Test projelerini yönet.', newBtn), grid);
+        return el('div', {}, head('Projeler'), grid);
     }
 
     // ---------- 2) Modüller (sadece tablo) ----------
@@ -143,14 +197,27 @@ export function projectsScreen() {
         })();
 
         // Modül satırlarını basar; tıklayınca senaryolara geçer
+        // Modül satırlarını basar; tıklayınca senaryolara geçer
         function paintRows(rows) {
             tbody.replaceChildren(...(rows.length
-                ? rows.map((m) => el('tr', { class: 'row-link', onClick: () => { state.module = m; state.view = 'scenarios'; render(); } },
-                    el('td', { style: 'font-weight:600;color:var(--fg)' }, m.name || '—'),
-                    el('td', { class: 'muted' }, m.description || '—'),
-                    el('td', { class: 'muted', style: 'white-space:nowrap' }, fmtDate(m.createdAt || m.created_at)),
-                    el('td', {}, el('span', { class: 'muted' }, icon('chevronR', 16)))))
+                ? rows.map((m) => {
+                    const del = el('button', { class: 'btn btn--ghost btn--icon btn--sm press', title: 'Sil', onClick: (e) => { e.stopPropagation(); askDeleteModule(m); } }, icon('x', 15));
+                    return el('tr', { class: 'row-link', onClick: () => { state.module = m; state.view = 'scenarios'; render(); } },
+                        el('td', { style: 'font-weight:600;color:var(--fg)' }, m.name || '—'),
+                        el('td', { class: 'muted' }, m.description || '—'),
+                        el('td', { class: 'muted', style: 'white-space:nowrap' }, fmtDate(m.createdAt || m.created_at)),
+                        el('td', {}, el('div', { class: 'row gap-2', style: 'justify-content:flex-end' }, del, icon('chevronR', 16))));
+                })
                 : [el('tr', {}, el('td', { colspan: 4 }, el('div', { class: 'empty', style: 'padding:36px' }, icon('layers', 36), 'Bu projede modül yok.')))]));
+        }
+
+        // Modül silme onayı: senaryo ve adımlar da silinir (cascade)
+        function askDeleteModule(m) {
+            confirmDelete(`"${m.name}" modülü ve içindeki tüm senaryo ve adımlar silinecek. Onaylıyor musun?`, async () => {
+                await api.del(`/api/v1/modules/${m.id}`);
+                toast('Modül silindi.', 'success');
+                all = all.filter((x) => x.id !== m.id); paintRows(all);
+            });
         }
 
         // Modül oluşturma modalı (sadece ad + açıklama)
@@ -204,16 +271,25 @@ export function projectsScreen() {
                 : [el('tr', {}, el('td', { colspan: 5 }, el('div', { class: 'empty', style: 'padding:36px' }, icon('fileText', 36), 'Bu modülde senaryo yok.')))]));
         })();
 
-        // Senaryo satırı: tarih, ad, açıklama, durum + en sağda düzenle/çalıştır
+        // Senaryo satırı: tarih, ad, açıklama, durum + en sağda düzenle/çalıştır/sil
         function scenarioRow(s) {
             const edit = el('button', { class: 'btn btn--ghost btn--icon btn--sm press', title: 'Düzenle', onClick: () => { state.scenario = s; state.view = 'scenario'; render(); } }, icon('settings', 16));
             const run = el('button', { class: 'btn btn--soft btn--icon btn--sm press', title: 'Çalıştır', onClick: () => runScenario(s) }, icon('play', 15));
+            const del = el('button', { class: 'btn btn--ghost btn--icon btn--sm press', title: 'Sil', onClick: () => askDeleteScenario(s) }, icon('x', 16));
             return el('tr', {},
                 el('td', { class: 'muted', style: 'white-space:nowrap' }, fmtDate(s.createdAt || s.created_at)),
                 el('td', { style: 'font-weight:600;color:var(--fg)' }, s.name || '—'),
                 el('td', { class: 'muted' }, s.description || '—'),
                 el('td', {}, statusBadge(s.status)),
-                el('td', {}, el('div', { class: 'row gap-2', style: 'justify-content:flex-end' }, edit, run)));
+                el('td', {}, el('div', { class: 'row gap-2', style: 'justify-content:flex-end' }, edit, run, del)));
+        }
+
+        // Senaryo silme onayı: adımlar da silinir (cascade)
+        function askDeleteScenario(s) {
+            confirmDelete(`"${s.name}" senaryosu ve tüm adımları silinecek. Onaylıyor musun?`, async () => {
+                await api.del(`/api/v1/scenarios/${s.id}`);
+                toast('Senaryo silindi.', 'success'); render();
+            });
         }
 
         // Senaryo oluşturma modalı (ad, açıklama, durum)
@@ -272,8 +348,9 @@ export function projectsScreen() {
         let steps = [];                                              // gerçek adımlar (GET /steps)
         let dragId = null;                                          // sürüklenen adımın id'si
 
-        const runBtn = el('button', { class: 'btn btn--soft press', onClick: () => runScenario(s) }, icon('play', 16), 'Run');
-        const inheritBtn = el('button', { class: 'btn btn--ghost press', onClick: openInheritModal }, icon('layers', 16), 'Kalıtım Al');
+        const runBtn = el('button', { class: 'btn btn--soft press', onClick: () => runScenario(s) }, icon('play', 16), 'Çalıştır');
+        const inheritBtn = el('button', { class: 'btn btn--ghost press', onClick: openInheritModal }, icon('layers', 16), 'Senaryo Dahil Et');
+        const addStepBtn = el('button', { class: 'btn btn--ghost press', onClick: openStepDrawer }, icon('plus', 16), 'Aksiyon Ekle');
 
         const body = el('div', {});
         const stepsTab = el('button', { class: 'seg active', onClick: () => { tab = 'steps'; paintTabs(); } }, 'Senaryo Adımları');
@@ -293,7 +370,7 @@ export function projectsScreen() {
 
         // 1. sekme: sürüklenebilir adım tablosu (INCLUDE satırı = gömülü senaryo)
         function stepsView() {
-            if (!steps.length) return el('div', { class: 'empty', style: 'padding:36px' }, icon('fileText', 36), 'Henüz adım yok. Eklentiden kaydet ya da kalıtım al.');
+            if (!steps.length) return el('div', { class: 'empty', style: 'padding:36px' }, icon('fileText', 36), 'Henüz adım yok. Eklentiden kaydet, kalıtım al ya da manuel aksiyon ekle.');
             const rows = steps.map((st, i) => stepRow(st, i));
             return el('table', { class: 'table table--drag' },
                 el('thead', {}, el('tr', {}, el('th', { style: 'width:48px' }, ''), el('th', { style: 'width:56px' }, '#'), el('th', {}, 'Aksiyon'), el('th', {}, 'Değer'), el('th', { style: 'width:56px' }, ''))),
@@ -395,6 +472,81 @@ export function projectsScreen() {
             }
         }
 
+        // "Aksiyon Ekle" paneli: sağdan kayarak açılan drawer (kategorize seçim + dinamik alanlar)
+        function openStepDrawer() {
+            // Kategorili aksiyon select'i (optgroup)
+            const action = el('select', { class: 'input' },
+                ...ACTION_GROUPS.map((g) => el('optgroup', { label: g.label },
+                    ...g.items.map(([val, txt]) => el('option', { value: val }, txt)))));
+
+            const valueField = el('div', { class: 'field' });
+            const value = el('input', { class: 'input' });
+            const selectorField = el('div', { class: 'field' });
+            const selector = el('input', { class: 'input', placeholder: '#email, //input[@id="email"] veya email' });
+            const hint = el('div', { class: 'muted', style: 'font-size:12px;margin-top:6px' }, 'CSS, XPath ya da ID otomatik algılanır.');
+
+            // Aksiyon değişince ilgili alanları göster/gizle ve placeholder'ı güncelle
+            const sync = () => {
+                const a = action.value;
+                valueField.style.display = NO_VALUE.has(a) ? 'none' : '';
+                value.placeholder = VALUE_HINT[a] || 'Değer';
+                selectorField.style.display = NO_SELECTOR.has(a) ? 'none' : '';
+            };
+            action.onchange = sync;
+
+            valueField.append(el('label', {}, 'Değer'), value);
+            selectorField.append(el('label', {}, 'Hedef Eleman'), selector, hint);
+
+            const submit = el('button', { class: 'btn btn--primary btn--block press' }, 'Ekle');
+
+            // Drawer iskeleti: scrim + panel; ikisi de animasyon için bir tick sonra "open" alır
+            const scrim = el('div', { class: 'drawer-scrim' });
+            const closeBtn = el('button', { class: 'btn btn--ghost btn--icon press', title: 'Kapat' }, icon('x', 18));
+            const panel = el('div', { class: 'drawer' },
+                el('div', { class: 'drawer__head' }, el('h3', {}, 'Aksiyon Ekle'), closeBtn),
+                el('div', { class: 'drawer__body' },
+                    el('div', { class: 'col gap-4' },
+                        el('div', { class: 'field' }, el('label', {}, 'Aksiyon'), action),
+                        valueField, selectorField)),
+                el('div', { class: 'drawer__foot' }, submit));
+
+            document.body.append(scrim, panel);
+            requestAnimationFrame(() => { scrim.classList.add('open'); panel.classList.add('open'); });
+
+            // Kapatma: animasyonu oynat, bitince DOM'dan kaldır ve ESC dinleyicisini sök
+            const close = () => {
+                scrim.classList.remove('open'); panel.classList.remove('open');
+                document.removeEventListener('keydown', onEsc);
+                setTimeout(() => { scrim.remove(); panel.remove(); }, 280);
+            };
+            const onEsc = (e) => { if (e.key === 'Escape') close(); };
+            scrim.onclick = close;
+            closeBtn.onclick = close;
+            document.addEventListener('keydown', onEsc);
+
+            submit.onclick = async () => {
+                const a = action.value;
+                // Eleman zorunluysa boş bırakılamaz
+                if (!NO_SELECTOR.has(a) && !selector.value.trim()) return toast('Hedef eleman gerekli.', 'error');
+                const selectors = NO_SELECTOR.has(a) ? null : detectSelector(selector.value);
+                submit.disabled = true; submit.textContent = 'Ekleniyor...';
+                try {
+                    // Sona eklenir; reload sonrası drag-drop ile taşınabilir
+                    await api.post(`/api/v1/scenarios/${s.id}/steps`, {
+                        action: a,
+                        value: NO_VALUE.has(a) ? null : (value.value.trim() || null),
+                        selectors,
+                    });
+                    close(); toast('Aksiyon eklendi.', 'success'); reload();
+                } catch (err) {
+                    submit.disabled = false; submit.textContent = 'Ekle';
+                    toast(err.message || 'Aksiyon eklenemedi.', 'error');
+                }
+            };
+
+            sync();   // ilk açılışta alanları hizala
+        }
+
         paintTabs();
 
         return el('div', {},
@@ -403,7 +555,7 @@ export function projectsScreen() {
                 { label: p.name, go: () => { state.view = 'modules'; render(); } },
                 { label: m.name, go: () => { state.view = 'scenarios'; render(); } },
                 { label: s.name }),
-            head(s.name, s.description, el('div', { class: 'row gap-2' }, inheritBtn, runBtn)),
+            head(s.name, s.description, el('div', { class: 'row gap-2' }, addStepBtn, inheritBtn, runBtn)),
             el('div', { class: 'card panel' },
                 el('div', { class: 'panel__head' }, el('div', { class: 'segbar' }, stepsTab, selTab)),
                 body));

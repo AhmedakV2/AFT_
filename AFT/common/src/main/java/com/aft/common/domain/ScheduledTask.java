@@ -10,7 +10,6 @@ import java.time.Instant;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class ScheduledTask extends BaseEntity {
 
-
     @ManyToOne(fetch = FetchType.LAZY,optional = false)
     @JoinColumn(name = "scenario_id")
     private Scenario scenario;
