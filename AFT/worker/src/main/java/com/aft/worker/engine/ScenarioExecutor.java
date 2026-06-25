@@ -1,7 +1,7 @@
 package com.aft.worker.engine;
 
 import com.aft.common.domain.Step;
-import com.aft.common.repository.StepRepository;
+import com.aft.common.scenario.ScenarioFlattener;
 import com.aft.worker.storage.ScreenshotUploader;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
@@ -18,16 +18,16 @@ import java.util.UUID;
 public class ScenarioExecutor {
 
     private final RunStateService state;
-    private final StepRepository steps;
     private final StepInterpreter interpreter;
     private final WebDriverProvider driverProvider;
     private final ScreenshotUploader screenshots;
     private final MeterRegistry metrics;
+    private final ScenarioFlattener flattener;
 
 
     public void execute(UUID testRunId) {
         UUID scenarioId = state.startRun(testRunId);
-        List<Step> stepList = steps.findByScenario_IdOrderByStepOrderAsc(scenarioId);
+        List<Step> stepList = flattener.flatten(scenarioId);
         WebDriver driver = driverProvider.create();
 
         int passed = 0;

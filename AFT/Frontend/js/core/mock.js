@@ -23,7 +23,26 @@ const projDb = {
     ],
     modules: [],      // {id, projectId, name, description, createdAt}
     scenarios: [],    // {id, moduleId, name, description, status, createdAt}
+    steps: {},        // scenarioId -> [adım]
 };
+
+// Senaryonun projesini ve baseUrl'ini zincirle çöz (mock seed için)
+function projectOfScenario(scenarioId) {
+    const sc = projDb.scenarios.find((x) => x.id === scenarioId);
+    const md = sc && projDb.modules.find((x) => x.id === sc.moduleId);
+    return md && projDb.projects.find((x) => x.id === md.projectId);
+}
+
+// Bir senaryonun adımları yoksa, baseUrl NAVIGATE + birkaç demo adımla tohumla
+function seedSteps(scenarioId) {
+    if (projDb.steps[scenarioId]) return projDb.steps[scenarioId];
+    const proj = projectOfScenario(scenarioId);
+    projDb.steps[scenarioId] = [
+        { id: uid(), stepOrder: 1, action: 'NAVIGATE', value: proj ? proj.baseUrl : '', selectors: {}, includedScenarioId: null, includedScenarioName: null },
+        { id: uid(), stepOrder: 2, action: 'CLICK', value: '', selectors: { id: 'login-btn', css: '#login-btn', xpath: '//*[@id="login-btn"]' }, includedScenarioId: null, includedScenarioName: null },
+    ];
+    return projDb.steps[scenarioId];
+}
 
 // Gerçek backend sözleşmesi (flat): modül/senaryo create query param, listeleme query filtreli
 function mockProjects(method, fullPath, body) {
@@ -70,6 +89,49 @@ function mockProjects(method, fullPath, body) {
     // Senaryo çalıştır (/api/v1/scenarios/{id}/run)
     if (method === 'POST' && seg[2] === 'scenarios' && seg[4] === 'run') {
         return { runId: uid(), status: 'QUEUED' };
+    }
+
+    // Kalıtım adayları (/api/v1/scenarios/inheritable?projectId=&excludeScenarioId=)
+    if (path === '/api/v1/scenarios/inheritable' && method === 'GET') {
+        const pid = q.get('projectId'); const ex = q.get('excludeScenarioId');
+        const moduleIds = projDb.modules.filter((m) => m.projectId === pid).map((m) => m.id);
+        return pageOf(projDb.scenarios.filter((s) => moduleIds.includes(s.moduleId) && s.id !== ex));
+    }
+
+    // Adım listesi (/api/v1/scenarios/{id}/steps)
+    if (method === 'GET' && seg[2] === 'scenarios' && seg[4] === 'steps' && !seg[5]) {
+        return seedSteps(seg[3]);
+    }
+
+    // Kalıtım ekle (/api/v1/scenarios/{id}/steps/include)
+    if (method === 'POST' && seg[2] === 'scenarios' && seg[4] === 'steps' && seg[5] === 'include') {
+        const arr = seedSteps(seg[3]);
+        const target = projDb.scenarios.find((x) => x.id === body.includedScenarioId);
+        const st = { id: uid(), stepOrder: arr.length + 1, action: 'INCLUDE_SCENARIO', value: null, selectors: {}, includedScenarioId: body.includedScenarioId, includedScenarioName: target ? target.name : 'Senaryo' };
+        arr.push(st); return st;
+    }
+
+    // Yeniden sırala (/api/v1/scenarios/{id}/steps/reorder)
+    if (method === 'PATCH' && seg[2] === 'scenarios' && seg[4] === 'steps' && seg[5] === 'reorder') {
+        const arr = projDb.steps[seg[3]] || [];
+        const order = body.orderedStepIds;
+        arr.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+        arr.forEach((x, i) => { x.stepOrder = i + 1; });
+        return arr;
+    }
+
+    // Adım sil (/api/v1/steps/{id})
+    if (method === 'DELETE' && seg[2] === 'steps') {
+        for (const k of Object.keys(projDb.steps)) projDb.steps[k] = projDb.steps[k].filter((x) => x.id !== seg[3]);
+        return 'Adım silindi';
+    }
+
+    // Adım güncelle - seçici/değer (/api/v1/steps/{id})
+    if (method === 'PATCH' && seg[2] === 'steps') {
+        for (const k of Object.keys(projDb.steps)) {
+            const st = projDb.steps[k].find((x) => x.id === seg[3]);
+            if (st) { Object.assign(st, body); return st; }
+        }
     }
 
     return undefined;

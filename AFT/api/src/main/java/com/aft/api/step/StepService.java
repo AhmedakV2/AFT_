@@ -1,18 +1,25 @@
 package com.aft.api.step;
 
+import com.aft.api.common.exception.ApiException;
 import com.aft.api.common.exception.NotFoundException;
 import com.aft.api.common.security.SecurityUtils;
 import com.aft.api.step.dto.StepResponse;
 import com.aft.api.step.dto.UpdateStepRequest;      // eksikti
+import com.aft.common.domain.Scenario;
 import com.aft.common.domain.Step;
+import com.aft.common.enums.ActionType;
 import com.aft.common.repository.ScenarioRepository;
 import com.aft.common.repository.StepRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -46,5 +53,80 @@ public class StepService {
     private Step findOwned(UUID stepId) {
         return steps.findByIdAndScenario_Module_Project_User_Id(stepId, SecurityUtils.currentUserId())
                 .orElseThrow(() -> new NotFoundException("Adim bulunamadi"));
+    }
+
+    @Transactional
+    public StepResponse addInclude(UUID scenarioId,UUID includeScenarioId) {
+        UUID userId = SecurityUtils.currentUserId();
+        Scenario host = scenarios.findByIdAndModule_Project_User_Id(scenarioId, userId)
+                .orElseThrow(() -> new NotFoundException("Senaryo bulunamadı"));
+
+        Scenario target = scenarios.findByIdAndModule_Project_User_Id(includeScenarioId, userId)
+                .orElseThrow(() -> new NotFoundException("Kalıtım alınacak senaryo bulunamadı"));
+
+        if (host.getId().equals(target.getId())) {
+            throw new ApiException("Senaryo kendini kalıtım alamaz", HttpStatus.BAD_REQUEST);
+        }
+        if (!host.getModule().getProject().getId().equals(target.getModule().getProject().getId())) {
+            throw new ApiException("Sadece aynı projedeki senaryolar kalıtım alınabilir", HttpStatus.BAD_REQUEST);
+        }
+        if (createsCycle(target.getId(),host.getId())){
+            throw new ApiException("Bu kalıtım bir döngü oluşturur", HttpStatus.BAD_REQUEST);
+        }
+
+        int order =steps.countByScenario_Id(scenarioId) + 1;
+        Step saved = steps.save(Step.builder()
+                .scenario(host)
+                .action(ActionType.INCLUDE_SCENARIO)
+                .includedScenarioId(target.getId())
+                .stepOrder(order)
+                .build());
+        return mapper.toResponse(saved);
+
+    }
+
+    @Transactional
+    public List<StepResponse> reorder(UUID scenarioId, List<UUID> orderedIds) {
+
+        UUID userId = SecurityUtils.currentUserId();
+        scenarios.findByIdAndModule_Project_User_Id(scenarioId, userId)
+                .orElseThrow(()-> new NotFoundException("Senaryo bulunamadi"));
+
+        List<Step> existing = steps.findByScenario_IdOrderByStepOrderAsc(scenarioId);
+        if (orderedIds.size() !=existing.size()){
+            throw new ApiException("Sıralama listesi adım sayısıyla uyuşmuyor", HttpStatus.BAD_REQUEST);
+        }
+
+        Map<UUID, Step> byId= existing.stream().collect(Collectors.toMap(Step::getId, s->s));
+
+        int tmp = -1;
+        for (Step s:existing) s.setStepOrder(tmp--);
+        steps.flush();
+
+        int order = 1;
+        for(UUID id:orderedIds){
+            Step s = byId.get(id);
+            if(s == null) throw new ApiException("Bilinmeyen adım:" + id, HttpStatus.BAD_REQUEST);
+            s.setStepOrder(order++);
+        }
+        steps.flush();
+
+        return steps.findByScenario_IdOrderByStepOrderAsc(scenarioId).stream().map(this::enrich).toList();
+    }
+
+    private StepResponse enrich(Step s) {
+        if(s.getAction().equals(ActionType.INCLUDE_SCENARIO) && s.getIncludedScenarioId()!= null) {
+            String name = scenarios.findById(s.getIncludedScenarioId()).map(Scenario::getName).orElse("silinmiş");
+            return mapper.toResponseWithInclude(s, name);
+        }
+        return  mapper.toResponse(s);
+    }
+
+    private boolean createsCycle(UUID from,UUID to) {
+        if(from.equals(to)) return true;
+        for (Step inc : steps.findByScenario_IdAndAction(from,ActionType.INCLUDE_SCENARIO)) {
+            if (createsCycle(inc.getIncludedScenarioId(),to)) return true;
+        }
+        return false;
     }
 }

@@ -48,7 +48,7 @@
         <dependencies>
             <dependency>
                 <groupId>com.aft</groupId>
-                <artifactId>aft-common</artifactId>
+                <artifactId>common</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

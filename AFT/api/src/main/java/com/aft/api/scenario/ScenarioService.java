@@ -1,5 +1,6 @@
 package com.aft.api.scenario;
 
+import com.aft.api.common.exception.ApiException;
 import com.aft.common.domain.Module;
 import com.aft.api.common.exception.NotFoundException;
 import com.aft.api.common.security.SecurityUtils;
@@ -10,9 +11,11 @@ import com.aft.common.domain.Scenario;
 import com.aft.common.enums.ScenarioStatus;
 import com.aft.common.repository.ModuleRepository;
 import com.aft.common.repository.ScenarioRepository;
+import com.aft.common.repository.StepRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,7 @@ public class ScenarioService {
     private final ModuleRepository modules;
     private final ScenarioRepository scenarios;
     private final ScenarioMapper mapper;
+    private final StepRepository steps;
 
     public Page<ScenarioResponse> list(Pageable pageable) {
         UUID userId = SecurityUtils.currentUserId();
@@ -37,6 +41,17 @@ public class ScenarioService {
     }
 
     public ScenarioResponse get(UUID scenarioId) { return mapper.toResponse(findOwned(scenarioId)); }
+
+    @Transactional(readOnly = true)
+    public Page<ScenarioResponse> inheritable(UUID projectId, UUID excludeScenarioId, Pageable pageable) {
+        UUID userId = SecurityUtils.currentUserId();
+        return scenarios.findByModule_Project_IdAndIdNotAndModule_Project_User_Id(
+                projectId,
+                excludeScenarioId,
+                userId,
+                pageable
+        ).map(mapper::toResponse);
+    }
 
     @Transactional
     public ScenarioResponse create(UUID moduleId, CreateScenarioRequest req) {
@@ -68,6 +83,9 @@ public class ScenarioService {
 
     @Transactional
     public void delete(UUID id) {
+        if (steps.countByIncludedScenarioId(id) > 0){
+            throw new ApiException("Bu senaryo başka senaryolar tarafından kalıtım alınıyor, önce o bağları kaldırın", HttpStatus.CONFLICT);
+        }
         scenarios.delete(findOwned(id));
     }
 

@@ -7,6 +7,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Entity
 @Table(name = "steps")
@@ -19,6 +20,9 @@ public class Step extends BaseEntity {
 
     @Column(name = "step_order", nullable = false)
     private int stepOrder;
+
+    @Column(name = "included_scenario_id")
+    private UUID includedScenarioId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

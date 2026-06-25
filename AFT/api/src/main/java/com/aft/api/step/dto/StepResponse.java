@@ -7,5 +7,5 @@ import java.util.UUID;
 
 public record StepResponse(
         UUID id, int stepOrder, ActionType action,
-        Map<String, String> selectors, String value, Instant createdAt
+        Map<String, String> selectors, String value, UUID includedScenarioId, String includedScenarioName, Instant createdAt
 ) {}

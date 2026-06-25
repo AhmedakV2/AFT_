@@ -6,6 +6,7 @@ import com.aft.api.scenario.dto.ChangeStatusRequest;
 import com.aft.api.scenario.dto.CreateScenarioRequest;
 import com.aft.api.scenario.dto.ScenarioResponse;
 import com.aft.api.scenario.dto.UpdateScenarioRequest;
+import com.aft.common.repository.ScenarioRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,9 +21,15 @@ import java.util.UUID;
 public class ScenarioControl {
     private final ScenarioService service;
 
+
     @GetMapping
     public ApiResponse<Page<ScenarioResponse>> list(@RequestParam(required = false) UUID moduleId, Pageable pageable) {
         return ApiResponse.ok(moduleId == null ? service.list(pageable) : service.listByModule(moduleId, pageable));
+    }
+
+    @GetMapping("/inheritable")
+    public ApiResponse <Page<ScenarioResponse>> inheritable(@RequestParam UUID projectId,@RequestParam UUID excludeScenarioId,Pageable pageable) {
+        return ApiResponse.ok(service.inheritable(projectId,excludeScenarioId,pageable));
     }
 
     @GetMapping("/{id}")

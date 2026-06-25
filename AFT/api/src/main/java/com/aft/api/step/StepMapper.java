@@ -8,4 +8,6 @@ import org.mapstruct.Mapper;
 public interface StepMapper {
 
     StepResponse toResponse(Step step);
+
+    StepResponse toResponseWithInclude(Step s, String name);
 }

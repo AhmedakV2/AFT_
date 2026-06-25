@@ -269,45 +269,130 @@ export function projectsScreen() {
         const { project: p, module: m, scenario: s } = state;
         const baseUrl = p.baseUrl || p.base_url || '';
         let tab = 'steps';
+        let steps = [];                                              // gerçek adımlar (GET /steps)
+        let dragId = null;                                          // sürüklenen adımın id'si
 
         const runBtn = el('button', { class: 'btn btn--soft press', onClick: () => runScenario(s) }, icon('play', 16), 'Run');
+        const inheritBtn = el('button', { class: 'btn btn--ghost press', onClick: openInheritModal }, icon('layers', 16), 'Kalıtım Al');
 
         const body = el('div', {});
         const stepsTab = el('button', { class: 'seg active', onClick: () => { tab = 'steps'; paintTabs(); } }, 'Senaryo Adımları');
         const selTab = el('button', { class: 'seg', onClick: () => { tab = 'selectors'; paintTabs(); } }, 'Seçici Değerler');
 
-        // İlk adım her zaman projenin base URL'i (gereksinim: otomatik ilk adım).
-        // Gerçek adımlar eklenti ingestion'ı ile gelir; GET steps ucu henüz yok, bu yüzden yalnız base adımı gösteriyoruz.
-        const steps = [{ stepOrder: 1, action: 'OPEN', value: baseUrl, selector: null, auto: true }];
+        // Adımları backend'den çek (INCLUDE_SCENARIO satırları da gelir)
+        (async () => { steps = listOf(await safeGet(`/api/v1/scenarios/${s.id}/steps`, [])); paintTabs(); })();
 
-        // Aktif sekmeyi yeniden çizer
+        const isAuto = (st) => st.action === 'NAVIGATE' && (st.value || '').replace(/\/$/, '') === baseUrl.replace(/\/$/, '');
+        const isInclude = (st) => st.action === 'INCLUDE_SCENARIO';
+
         function paintTabs() {
             stepsTab.className = 'seg' + (tab === 'steps' ? ' active' : '');
             selTab.className = 'seg' + (tab === 'selectors' ? ' active' : '');
             body.replaceChildren(tab === 'steps' ? stepsView() : selectorsView());
         }
 
-        // 1. sekme: sıralı aksiyon adımları
+        // 1. sekme: sürüklenebilir adım tablosu (INCLUDE satırı = gömülü senaryo)
         function stepsView() {
-            return el('table', { class: 'table' },
-                el('thead', {}, el('tr', {}, el('th', { style: 'width:60px' }, '#'), el('th', {}, 'Aksiyon'), el('th', {}, 'Değer'))),
-                el('tbody', {}, ...steps.map((st, i) => el('tr', {},
-                    el('td', { class: 'muted' }, st.stepOrder ?? i + 1),
-                    el('td', {}, el('span', { class: 'badge ' + (st.auto ? 'badge--info' : 'badge--neutral') }, st.action || '—')),
-                    el('td', { class: 'muted', style: 'word-break:break-all' }, st.value || '—')))));
+            if (!steps.length) return el('div', { class: 'empty', style: 'padding:36px' }, icon('fileText', 36), 'Henüz adım yok. Eklentiden kaydet ya da kalıtım al.');
+            const rows = steps.map((st, i) => stepRow(st, i));
+            return el('table', { class: 'table table--drag' },
+                el('thead', {}, el('tr', {}, el('th', { style: 'width:48px' }, ''), el('th', { style: 'width:56px' }, '#'), el('th', {}, 'Aksiyon'), el('th', {}, 'Değer'), el('th', { style: 'width:56px' }, ''))),
+                el('tbody', {}, ...rows));
         }
 
-        // 2. sekme: yakalanan XPath / CSS / ID değerleri
+        // Tek adım satırı; INCLUDE ise senaryo adıyla vurgulu gösterilir
+        function stepRow(st, i) {
+            const inc = isInclude(st);
+            const actionCell = inc
+                ? el('span', { class: 'badge badge--info' }, icon('layers', 13), st.includedScenarioName || 'Senaryo')
+                : el('span', { class: 'badge ' + (isAuto(st) ? 'badge--info' : 'badge--neutral') }, st.action || '—');
+            const valueCell = inc
+                ? el('span', { class: 'muted' }, 'Gömülü senaryo adımları')
+                : el('span', { class: 'muted', style: 'word-break:break-all' }, (isAuto(st) ? 'Otomatik · ' : '') + (st.value || '—'));
+
+            const del = el('button', { class: 'btn btn--ghost btn--icon btn--sm press', title: 'Sil', onClick: (e) => { e.stopPropagation(); removeStep(st); } }, icon('x', 15));
+
+            const tr = el('tr', { class: 'drag-row' + (inc ? ' drag-row--inc' : ''), draggable: 'true', dataset: { id: st.id } },
+                el('td', { class: 'drag-handle muted' }, icon('menu', 16)),
+                el('td', { class: 'muted' }, i + 1),
+                el('td', {}, actionCell),
+                el('td', {}, valueCell),
+                el('td', {}, del));
+
+            // Native HTML5 sürükle-bırak ile yeniden sıralama
+            tr.ondragstart = () => { dragId = st.id; tr.classList.add('dragging'); };
+            tr.ondragend = () => { dragId = null; tr.classList.remove('dragging'); };
+            tr.ondragover = (e) => { e.preventDefault(); tr.classList.add('drop-target'); };
+            tr.ondragleave = () => tr.classList.remove('drop-target');
+            tr.ondrop = (e) => { e.preventDefault(); tr.classList.remove('drop-target'); dropOn(st.id); };
+            return tr;
+        }
+
+        // Sürüklenen adımı hedefin önüne taşı, sırayı backend'e yaz
+        function dropOn(targetId) {
+            if (!dragId || dragId === targetId) return;
+            const from = steps.findIndex((x) => x.id === dragId);
+            const to = steps.findIndex((x) => x.id === targetId);
+            if (from < 0 || to < 0) return;
+            const [moved] = steps.splice(from, 1);
+            steps.splice(to, 0, moved);
+            paintTabs();
+            persistOrder();
+        }
+
+        // PATCH /steps/reorder — yeni sırayı id listesi olarak gönder
+        async function persistOrder() {
+            try { await api.patch(`/api/v1/scenarios/${s.id}/steps/reorder`, { orderedStepIds: steps.map((x) => x.id) }); }
+            catch (err) { toast(err.message || 'Sıralama kaydedilemedi.', 'error'); reload(); }
+        }
+
+        async function removeStep(st) {
+            try { await api.del(`/api/v1/steps/${st.id}`); steps = steps.filter((x) => x.id !== st.id); paintTabs(); }
+            catch (err) { toast(err.message || 'Adım silinemedi.', 'error'); }
+        }
+
+        async function reload() { steps = listOf(await safeGet(`/api/v1/scenarios/${s.id}/steps`, [])); paintTabs(); }
+
+        // 2. sekme: seçici (id/css/xpath) düzenleme — PATCH /steps/{id}
         function selectorsView() {
-            const withSel = steps.filter((st) => st.selector);
+            const withSel = steps.filter((st) => st.selectors && Object.keys(st.selectors).length);
             if (!withSel.length) return el('div', { class: 'empty', style: 'padding:36px' }, icon('search', 36), 'Henüz seçici verisi yok (eklentiden gelir).');
+            const cell = (st, key) => {
+                const inp = el('input', { class: 'input', value: (st.selectors[key] || '') });
+                inp.onchange = async () => {
+                    const selectors = { ...st.selectors, [key]: inp.value };
+                    try { await api.patch(`/api/v1/steps/${st.id}`, { selectors }); st.selectors = selectors; }
+                    catch (err) { toast(err.message || 'Seçici kaydedilemedi.', 'error'); }
+                };
+                return el('td', {}, inp);
+            };
             return el('table', { class: 'table' },
                 el('thead', {}, el('tr', {}, el('th', {}, 'Adım'), el('th', {}, 'ID'), el('th', {}, 'CSS'), el('th', {}, 'XPath'))),
                 el('tbody', {}, ...withSel.map((st) => el('tr', {},
-                    el('td', { class: 'muted' }, st.action),
-                    el('td', {}, el('input', { class: 'input', value: st.selector.id || '' })),
-                    el('td', {}, el('input', { class: 'input', value: st.selector.css || '' })),
-                    el('td', {}, el('input', { class: 'input', value: st.selector.xpath || '' }))))));
+                    el('td', { class: 'muted' }, st.action), cell(st, 'id'), cell(st, 'css'), cell(st, 'xpath')))));
+        }
+
+        // "Kalıtım Al" modalı: aynı projedeki uygun senaryolar
+        function openInheritModal() {
+            const listWrap = el('div', { class: 'col gap-2', style: 'max-height:340px;overflow:auto' }, el('div', { class: 'muted', style: 'padding:12px' }, 'Yükleniyor...'));
+            (async () => {
+                const rows = listOf(await safeGet(`/api/v1/scenarios/inheritable?projectId=${p.id}&excludeScenarioId=${s.id}&page=0&size=100`, []));
+                listWrap.replaceChildren(...(rows.length
+                    ? rows.map((cand) => el('button', { class: 'inherit-item press', onClick: () => addInherit(cand) },
+                        el('div', {}, el('div', { style: 'font-weight:600;color:var(--fg)' }, cand.name),
+                            el('div', { class: 'muted', style: 'font-size:12px' }, cand.description || '—')),
+                        el('span', { class: 'badge badge--soft' }, icon('plus', 13), 'Ekle')))
+                    : [el('div', { class: 'empty', style: 'padding:28px' }, icon('layers', 32), 'Eklenebilecek senaryo yok.')]));
+            })();
+            const close = openModal(listWrap, { title: 'Kalıtım Al' });
+
+            // Seçilen senaryoyu INCLUDE adımı olarak ekle (sona eklenir, sürükleyerek taşınır)
+            async function addInherit(cand) {
+                try {
+                    await api.post(`/api/v1/scenarios/${s.id}/steps/include`, { includedScenarioId: cand.id });
+                    close(); toast(`"${cand.name}" kalıtım olarak eklendi.`, 'success'); reload();
+                } catch (err) { toast(err.message || 'Kalıtım eklenemedi.', 'error'); }
+            }
         }
 
         paintTabs();
@@ -318,7 +403,7 @@ export function projectsScreen() {
                 { label: p.name, go: () => { state.view = 'modules'; render(); } },
                 { label: m.name, go: () => { state.view = 'scenarios'; render(); } },
                 { label: s.name }),
-            head(s.name, s.description, runBtn),
+            head(s.name, s.description, el('div', { class: 'row gap-2' }, inheritBtn, runBtn)),
             el('div', { class: 'card panel' },
                 el('div', { class: 'panel__head' }, el('div', { class: 'segbar' }, stepsTab, selTab)),
                 body));

@@ -1,6 +1,8 @@
 package com.aft.api.step;
 
 import com.aft.api.common.ApiResponse;
+import com.aft.api.step.dto.IncludeScenarioRequest;
+import com.aft.api.step.dto.ReorderStepsRequest;
 import com.aft.api.step.dto.StepResponse;
 import com.aft.api.step.dto.UpdateStepRequest;
 import jakarta.validation.Valid;
@@ -19,6 +21,16 @@ public class StepController {
     @GetMapping("/scenarios/{scenarioId}/steps")
     public ApiResponse<List<StepResponse>> list(@PathVariable UUID scenarioId) {
         return ApiResponse.ok(service.listByScenario(scenarioId));
+    }
+
+    @PostMapping("/scenarios/{scenarioId}/steps/include")
+    public ApiResponse<StepResponse> include(@PathVariable UUID scenarioId,@Valid @RequestBody IncludeScenarioRequest req) {
+        return ApiResponse.ok(service.addInclude(scenarioId,req.includedScenarioId()));
+    }
+
+    @PatchMapping("/scenarios/{scenarioId}/steps/reorder")
+    public ApiResponse<List<StepResponse>> reorder(@PathVariable UUID scenarioId, @Valid @RequestBody ReorderStepsRequest req) {
+        return ApiResponse.ok(service.reorder(scenarioId, req.orderedStepIds()));
     }
 
     @PatchMapping("/steps/{stepId}")
