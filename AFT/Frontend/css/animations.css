@@ -1,0 +1,112 @@
+/* AFT Motion Sistemi — tüm frontend için tek otoriter animasyon katmanı.
+   Süre/easing tokenları :root'tan ayarlanır; utility class'larıyla kullanılır. */
+
+:root {
+    /* ---- Süre tokenları ---- */
+    --dur-1: 120ms;   /* mikro etkileşim: buton, toggle */
+    --dur-2: 220ms;   /* standart: hover, tab, küçük geçiş */
+    --dur-3: 380ms;   /* giriş: kart, panel */
+    --dur-4: 600ms;   /* sahne: hero, büyük blok */
+
+    /* ---- Easing tokenları ---- */
+    --ease-out: cubic-bezier(.2, .7, .2, 1);   /* ana easing — yumuşak çıkış */
+    --ease-in: cubic-bezier(.4, 0, 1, 1);      /* çıkışlar / kapanışlar */
+    --ease-spring: cubic-bezier(.34, 1.56, .64, 1); /* hafif zıplama */
+}
+
+/* ============================================================
+   1) KEYFRAMES
+   ============================================================ */
+@keyframes aft-rise   { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes aft-fade   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes aft-pop    { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes aft-slide-l{ from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+@keyframes aft-slide-r{ from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+@keyframes aft-spin   { to { transform: rotate(360deg); } }
+@keyframes aft-pulse  { 50% { opacity: .5; } }
+@keyframes aft-shimmer{ 100% { background-position: 200% 0; } }
+
+/* ============================================================
+   2) GİRİŞ (entrance) UTILITY'LERİ
+   ============================================================ */
+.anim-rise    { animation: aft-rise    var(--dur-3) var(--ease-out) both; }
+.anim-fade    { animation: aft-fade    var(--dur-3) var(--ease-out) both; }
+.anim-pop     { animation: aft-pop     var(--dur-2) var(--ease-spring) both; }
+.anim-slide-l { animation: aft-slide-l var(--dur-3) var(--ease-out) both; }
+.anim-slide-r { animation: aft-slide-r var(--dur-3) var(--ease-out) both; }
+
+/* Stagger — kardeş elemanların sırayla girmesi için gecikme adımları */
+.anim-stagger > * { animation: aft-rise var(--dur-3) var(--ease-out) both; }
+.anim-stagger > *:nth-child(1) { animation-delay: 40ms; }
+.anim-stagger > *:nth-child(2) { animation-delay: 100ms; }
+.anim-stagger > *:nth-child(3) { animation-delay: 160ms; }
+.anim-stagger > *:nth-child(4) { animation-delay: 220ms; }
+.anim-stagger > *:nth-child(5) { animation-delay: 280ms; }
+.anim-stagger > *:nth-child(6) { animation-delay: 340ms; }
+
+/* ============================================================
+   3) SCROLL REVEAL (IntersectionObserver 'in' class'ı ekler)
+   ============================================================ */
+.reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity var(--dur-4) var(--ease-out), transform var(--dur-4) var(--ease-out);
+}
+.reveal.in { opacity: 1; transform: none; }
+
+/* ============================================================
+   4) ETKİLEŞİM (hover / press) — inline style'ı ezmeyen özellikler
+   ============================================================ */
+.hover-lift {
+    transition: transform var(--dur-2) var(--ease-out), filter var(--dur-2) var(--ease-out);
+    will-change: transform;
+}
+.hover-lift:hover {
+    transform: translateY(-6px);
+    filter: drop-shadow(0 18px 32px color-mix(in srgb, var(--fg) 14%, transparent));
+}
+.hover-lift:active { transform: translateY(-2px); }
+
+.hover-grow { transition: transform var(--dur-2) var(--ease-out); }
+.hover-grow:hover { transform: scale(1.04); }
+.hover-grow:active { transform: scale(.98); }
+
+.press { transition: transform var(--dur-1) var(--ease-out); }
+.press:active { transform: translateY(1px) scale(.98); }
+
+/* ============================================================
+   5) DURUM (loading) UTILITY'LERİ
+   ============================================================ */
+.spin { animation: aft-spin 700ms linear infinite; }     /* spinner */
+.pulse { animation: aft-pulse 1.4s var(--ease-out) infinite; } /* canlılık/bekleme */
+
+/* Skeleton shimmer — yükleniyor placeholder'ları */
+.skeleton {
+    background: linear-gradient(90deg,
+    var(--bg-3) 25%,
+    color-mix(in srgb, var(--bg-3) 60%, var(--surface)) 37%,
+    var(--bg-3) 63%);
+    background-size: 200% 100%;
+    animation: aft-shimmer 1.4s linear infinite;
+    border-radius: var(--radius-md, 11px);
+}
+
+/* ============================================================
+   6) OVERLAY / MODAL / TOAST
+   ============================================================ */
+.overlay-enter { animation: aft-fade var(--dur-2) var(--ease-out) both; }
+.modal-enter   { animation: aft-pop  var(--dur-2) var(--ease-spring) both; }
+.toast-enter   { animation: aft-slide-l var(--dur-3) var(--ease-out) both; }
+
+/* ============================================================
+   7) ERİŞİLEBİLİRLİK — hareketi azalt tercihinde her şeyi durdur
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+    }
+    .reveal { opacity: 1 !important; transform: none !important; }
+    .hover-lift:hover, .hover-grow:hover, .press:active { transform: none !important; }
+}

@@ -5,14 +5,15 @@ import { login, googleLogin } from '../core/session.js';
 import { getGoogleIdToken } from '../core/google.js';
 import { toast } from '../components/toast.js';
 import { themeToggle } from '../components/themeToggle.js';
+import { brand } from '../components/brand.js';
 
 export function loginScreen() {
     let showPw = false;
     const emailInput = el('input', { class: 'input', type: 'email', placeholder: 'ad@ornek.com', autocomplete: 'email' });
     const pwInput = el('input', { class: 'input', type: 'password', placeholder: '••••••••', autocomplete: 'current-password' });
-    const submitBtn = el('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Giriş Yap');
+    const submitBtn = el('button', { class: 'btn btn--primary btn--block press hover-grow', type: 'submit' }, 'Giriş Yap');
 
-    const toggleEye = el('button', { class: 'input-affix', type: 'button', 'aria-label': 'Şifreyi göster' }, icon('eye', 18));
+    const toggleEye = el('button', { class: 'input-affix press', type: 'button', 'aria-label': 'Şifreyi göster' }, icon('eye', 18));
     toggleEye.onclick = () => {                                    // şifre görünürlüğünü değiştir
         showPw = !showPw;
         pwInput.type = showPw ? 'text' : 'password';
@@ -55,9 +56,9 @@ export function loginScreen() {
     );
 
     return el('div', { class: 'auth' },
-        el('div', { class: 'auth__card' },
+        el('div', { class: 'auth__card anim-pop' },
             el('div', { class: 'row', style: 'justify-content:space-between;margin-bottom:18px' },
-                el('div', { class: 'brand' }, el('span', { class: 'brand__mark' }, icon('zap', 18)), 'AFT'),
+                brand(),
                 themeToggle(),
             ),
             el('div', { class: 'card' },
@@ -65,7 +66,7 @@ export function loginScreen() {
                 el('p', { class: 'auth__sub' }, 'Hesabına giriş yap ve kaldığın yerden devam et.'),
                 form,
                 el('div', { class: 'divider', style: 'margin:20px 0' }, 'veya'),
-                el('button', { class: 'btn btn--ghost btn--block', onClick: google }, icon('google', 18), 'Google ile devam et'),
+                el('button', { class: 'btn btn--ghost btn--block press', onClick: google }, icon('google', 18), 'Google ile devam et'),
             ),
             el('p', { class: 'auth__foot' }, 'Hesabın yok mu? ', el('a', { href: '#/register' }, 'Kayıt ol')),
         ),

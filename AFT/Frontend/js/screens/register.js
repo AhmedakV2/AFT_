@@ -5,6 +5,7 @@ import { api } from '../core/api.js';
 import { login } from '../core/session.js';
 import { toast } from '../components/toast.js';
 import { themeToggle } from '../components/themeToggle.js';
+import { brand } from '../components/brand.js';
 
 export function registerScreen() {
     const state = { step: 1, email: '', password: '' };           // doğrulama sonrası otomatik giriş için sakla
@@ -27,10 +28,10 @@ export function registerScreen() {
         const phone = el('input', { class: 'input', type: 'tel', placeholder: '+90 5xx xxx xx xx', autocomplete: 'tel' });
         const username = el('input', { class: 'input', type: 'text', placeholder: 'kullanici_adi', autocomplete: 'username' });
         const pw = el('input', { class: 'input', type: 'password', placeholder: 'En az 8 karakter', autocomplete: 'new-password' });
-        const eye = el('button', { class: 'input-affix', type: 'button', 'aria-label': 'Şifreyi göster' }, icon('eye', 18));
+        const eye = el('button', { class: 'input-affix press', type: 'button', 'aria-label': 'Şifreyi göster' }, icon('eye', 18));
         eye.onclick = () => { showPw = !showPw; pw.type = showPw ? 'text' : 'password'; eye.replaceChildren(icon(showPw ? 'eyeOff' : 'eye', 18)); };
 
-        const btn = el('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Devam et');
+        const btn = el('button', { class: 'btn btn--primary btn--block press hover-grow', type: 'submit' }, 'Devam et');
 
         async function submit(e) {
             e.preventDefault();
@@ -47,7 +48,7 @@ export function registerScreen() {
             }
         }
 
-        return el('form', { class: 'col gap-4', onSubmit: submit },
+        return el('form', { class: 'col gap-4 anim-rise', onSubmit: submit },
             el('h1', { class: 'auth__title' }, 'Hesap oluştur'),
             el('p', { class: 'auth__sub' }, 'Birkaç bilgi, sonra e-postanı doğrulayalım.'),
             el('div', { class: 'field' }, el('label', {}, 'E-posta'), email),
@@ -73,7 +74,7 @@ export function registerScreen() {
             };
         });
 
-        const btn = el('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Doğrula');
+        const btn = el('button', { class: 'btn btn--primary btn--block press hover-grow', type: 'submit' }, 'Doğrula');
 
         async function submit(e) {
             e.preventDefault();
@@ -90,19 +91,19 @@ export function registerScreen() {
             }
         }
 
-        return el('form', { class: 'col gap-4', onSubmit: submit },
+        return el('form', { class: 'col gap-4 anim-rise', onSubmit: submit },
             el('h1', { class: 'auth__title' }, 'E-postanı doğrula'),
             el('p', { class: 'auth__sub' }, state.email + ' adresine gönderdiğimiz 6 haneli kodu gir.'),
             el('div', { class: 'otp' }, ...inputs),
             btn,
-            el('button', { class: 'btn btn--ghost btn--block', type: 'button', onClick: () => { state.step = 1; render(); } }, 'Geri'),
+            el('button', { class: 'btn btn--ghost btn--block press', type: 'button', onClick: () => { state.step = 1; render(); } }, 'Geri'),
         );
     }
 
     // --- Adım 3: tamamlandı ---
     function stepDone() {
         setTimeout(() => navigate('/dashboard'), 1200);
-        return el('div', { class: 'col gap-4', style: 'text-align:center;padding:14px 0' },
+        return el('div', { class: 'col gap-4 anim-pop', style: 'text-align:center;padding:14px 0' },
             el('div', { style: 'width:64px;height:64px;border-radius:99px;background:var(--green-tint);color:var(--green-strong);display:flex;align-items:center;justify-content:center;margin:0 auto' }, icon('check', 30)),
             el('h1', { class: 'auth__title' }, 'Hesabın hazır'),
             el('p', { class: 'auth__sub', style: 'margin:0' }, 'Panele yönlendiriliyorsun...'),
@@ -112,9 +113,9 @@ export function registerScreen() {
     render();
 
     return el('div', { class: 'auth' },
-        el('div', { class: 'auth__card' },
+        el('div', { class: 'auth__card anim-pop' },
             el('div', { class: 'row', style: 'justify-content:space-between;margin-bottom:18px' },
-                el('div', { class: 'brand' }, el('span', { class: 'brand__mark' }, icon('zap', 18)), 'AFT'),
+                brand(),
                 themeToggle(),
             ),
             holder,

@@ -2,8 +2,11 @@ import { el } from '../core/dom.js';
 import { navigate } from '../core/router.js';
 import { themeToggle } from '../components/themeToggle.js';
 
+// Tüm kartların ortak animasyonu — tek yerden yönetilir
+const CARD_ANIM = 'hover-lift';
+
 const brand = () =>
-    el('button', { style: 'display:flex; align-items:center; gap:11px; background:none; border:none; cursor:pointer; padding:0;' },
+    el('button', { class: 'press', style: 'display:flex; align-items:center; gap:11px; background:none; border:none; cursor:pointer; padding:0;' },
         el('span', { style: 'width:34px; height:34px; border-radius:9px; background:var(--orange); display:grid; place-items:center; box-shadow:0 6px 16px color-mix(in srgb, var(--orange) 42%, transparent);' },
             el('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', html: '<circle cx="12" cy="12" r="8.5" stroke="#fff" stroke-width="2"/><path d="M10.2 9 15 12l-4.8 3z" fill="#fff"/>' })
         ),
@@ -25,8 +28,8 @@ const navLink = (label, targetId) => el('a', {
     }
 }, label);
 
-const featureCard = (svgIconHtml, title, desc, theme = 'orange') =>
-    el('div', { class: 'lp-feature', style: 'background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; box-shadow:var(--shadow); display:flex; flex-direction:column;' },
+const Card = (svgIconHtml, title, desc, theme = 'orange') =>
+    el('div', { class: `lp-feature ${CARD_ANIM}`, style: 'background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; box-shadow:var(--shadow); display:flex; flex-direction:column;' },
         el('span', {
             style: `width:48px; height:48px; border-radius:13px; background:var(--${theme}-tint); color:var(--${theme}); display:grid; place-items:center; margin-bottom:18px;`
         }, el('svg', { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', html: svgIconHtml })),
@@ -45,36 +48,32 @@ export function features() {
     return el('section', { id: 'ozellikler', style: 'max-width:1200px; margin:0 auto; padding:120px 24px; scroll-margin-top:88px;' },
         sectionHeader('ÖZELLİKLER', 'Otomasyonu uçtan uca yönetin', 'Kaydetmekten raporlamaya kadar tüm test sürecini tek bir kontrol panelinde toplar.'),
         el('div', { style: 'display:grid; grid-template-columns:repeat(3, 1fr); gap:24px;' },
-            featureCard('<circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/>', 'Kaydet & Oynat', 'Chrome eklentisiyle ekranda yaptığın adımları yakala, kodsuz senaryolara dönüştür.', 'orange'),
-            featureCard('<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>', 'No-code Senaryolar', 'Adımları sürükle-bırak düzenle, taslak ve hazır durumlarıyla yönet.', 'blue'),
-            featureCard('<path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/>', 'RESTful Veri Akışı', 'Veriler arka planda işlenir ve tıpkı Selenium + Cucumber gibi çalıştırılır.', 'green'),
-            featureCard('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>', 'Token Güvenliği', 'Token tabanlı doğrulama ile güvenli oturum yönetimi ve veri akışı.', 'blue'),
-            featureCard('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>', 'Zamanlanmış Görevler', 'Testleri planla, gelecek çalıştırmaları izle, gece koşularını otomatikleştir.', 'orange'),
-            featureCard('<path d="M18 20V10M12 20V4M6 20v-6"/><path d="M3 20h18"/>', 'Detaylı Raporlar', 'Başarı yüzdesi, hata görselleri ve adım sonuçları; Excel ve PDF olarak dışa aktar.', 'green'),
+            Card('<circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none"/>', 'Kaydet & Oynat', 'Chrome eklentisiyle ekranda yaptığın adımları yakala, kodsuz senaryolara dönüştür.', 'orange'),
+            Card('<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>', 'No-code Senaryolar', 'Adımları sürükle-bırak düzenle, taslak ve hazır durumlarıyla yönet.', 'blue'),
+            Card('<path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/>', 'RESTful Veri Akışı', 'Veriler arka planda işlenir ve tıpkı Selenium + Cucumber gibi çalıştırılır.', 'green'),
+            Card('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>', 'Token Güvenliği', 'Token tabanlı doğrulama ile güvenli oturum yönetimi ve veri akışı.', 'blue'),
+            Card('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>', 'Zamanlanmış Görevler', 'Testleri planla, gelecek çalıştırmaları izle, gece koşularını otomatikleştir.', 'orange'),
+            Card('<path d="M18 20V10M12 20V4M6 20v-6"/><path d="M3 20h18"/>', 'Detaylı Raporlar', 'Başarı yüzdesi, hata görselleri ve adım sonuçları; Excel ve PDF olarak dışa aktar.', 'green'),
         )
     );
 }
 
+
 export function howItWorks() {
+    const stepCard = (num, theme, title, desc) =>
+        el('div', { class: CARD_ANIM, style: 'background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:32px; box-shadow:var(--shadow);' },
+            el('div', { style: `font:800 18px "Sora"; color:var(--${theme}); margin-bottom:16px;` }, num),
+            el('h3', { style: 'font:700 20px "Sora"; color:var(--fg); margin:0 0 12px;' }, title),
+            el('p', { style: 'color:var(--fg-3); font:400 15px/1.6 "Manrope"; margin:0;' }, desc)
+        );
+
     return el('section', { id: 'nasil-calisir', style: 'background:var(--bg-2); border-top:1px solid var(--border); border-bottom:1px solid var(--border); scroll-margin-top:88px;' },
         el('div', { style: 'max-width:1200px; margin:0 auto; padding:120px 24px;' },
             sectionHeader('NASIL ÇALIŞIR', 'Üç adımda otomasyon'),
             el('div', { style: 'display:grid; grid-template-columns:repeat(3, 1fr); gap:24px;' },
-                el('div', { style: 'background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:32px; box-shadow:var(--shadow);' },
-                    el('div', { style: 'font:800 18px "Sora"; color:var(--orange); margin-bottom:16px;' }, '01'),
-                    el('h3', { style: 'font:700 20px "Sora"; color:var(--fg); margin:0 0 12px;' }, 'Kaydet'),
-                    el('p', { style: 'color:var(--fg-3); font:400 15px/1.6 "Manrope"; margin:0;' }, 'Chrome eklentisini aç; ekranda yaptığın her adım otomatik olarak kaydedilir.')
-                ),
-                el('div', { style: 'background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:32px; box-shadow:var(--shadow);' },
-                    el('div', { style: 'font:800 18px "Sora"; color:var(--blue); margin-bottom:16px;' }, '02'),
-                    el('h3', { style: 'font:700 20px "Sora"; color:var(--fg); margin:0 0 12px;' }, 'İşle'),
-                    el('p', { style: 'color:var(--fg-3); font:400 15px/1.6 "Manrope"; margin:0;' }, "Veriler RESTful API ile AFT'ye gelir; algoritma onları gerçek bir test gibi çalıştırır.")
-                ),
-                el('div', { style: 'background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:32px; box-shadow:var(--shadow);' },
-                    el('div', { style: 'font:800 18px "Sora"; color:var(--green); margin-bottom:16px;' }, '03'),
-                    el('h3', { style: 'font:700 20px "Sora"; color:var(--fg); margin:0 0 12px;' }, 'Raporla'),
-                    el('p', { style: 'color:var(--fg-3); font:400 15px/1.6 "Manrope"; margin:0;' }, 'Başarı oranı, hata görselleri ve adım adım sonuçlar anında panelde belirir.')
-                )
+                stepCard('01', 'orange', 'Kaydet', 'Chrome eklentisini aç; ekranda yaptığın her adım otomatik olarak kaydedilir.'),
+                stepCard('02', 'blue', 'İşle', "Veriler RESTful API ile AFT'ye gelir; algoritma onları gerçek bir test gibi çalıştırır."),
+                stepCard('03', 'green', 'Raporla', 'Başarı oranı, hata görselleri ve adım adım sonuçlar anında panelde belirir.')
             )
         )
     );
@@ -82,7 +81,7 @@ export function howItWorks() {
 
 export function guide() {
     const stepBox = (number, title, desc, theme) => el('div', { style: 'display:flex; flex-direction:column; align-items:center;' },
-        el('div', { style: 'width:100%; display:flex; gap:16px; align-items:flex-start; padding:24px; border:1px solid var(--border); border-radius:16px; background:var(--surface); box-shadow:var(--shadow);' },
+        el('div', { class: CARD_ANIM, style: 'width:100%; display:flex; gap:16px; align-items:flex-start; padding:24px; border:1px solid var(--border); border-radius:16px; background:var(--surface); box-shadow:var(--shadow);' },
             el('span', { style: `width:36px; height:36px; border-radius:10px; background:var(--${theme}-tint); color:var(--${theme}); display:grid; place-items:center; font:800 16px "Sora"; flex-shrink:0;` }, number),
             el('div', {},
                 el('h3', { style: 'font:700 18px "Sora"; color:var(--fg); margin:0 0 8px;' }, title),
@@ -109,7 +108,7 @@ export function guide() {
                 arrowDown(),
                 stepBox('5', 'Raporu incele', 'Başarı oranını, hata anının ekran görüntüsünü ve adım sonuçlarını gör; Excel/PDF olarak dışa aktar.', 'green')
             ),
-            el('div', { style: 'background:var(--surface); border:1px solid var(--border); border-radius:24px; box-shadow:var(--shadow-lg); overflow:hidden;' },
+            el('div', { class: CARD_ANIM, style: 'background:var(--surface); border:1px solid var(--border); border-radius:24px; box-shadow:var(--shadow-lg); overflow:hidden;' },
                 el('div', { style: 'display:flex; align-items:center; gap:12px; padding:20px; border-bottom:1px solid var(--border);' },
                     el('span', { style: 'width:32px; height:32px; border-radius:8px; background:var(--orange); display:grid; place-items:center;' },
                         el('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', html: '<circle cx="12" cy="12" r="8.5" stroke="#fff" stroke-width="2"/><path d="M10.2 9 15 12l-4.8 3z" fill="#fff"/>' })
@@ -140,7 +139,7 @@ export function guide() {
                         el('span', { style: 'font:700 11px "Manrope"; color:var(--green); background:var(--surface); padding:4px 8px; border-radius:6px;' }, 'ASSERT'),
                         el('span', { style: 'font:500 14px "Manrope"; color:var(--fg-2);' }, 'Panel göründü')
                     ),
-                    el('button', { style: 'margin-top:12px; height:48px; border-radius:12px; border:none; background:var(--orange); color:#fff; font:700 15px "Manrope"; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px;' },
+                    el('button', { class: 'press', style: 'margin-top:12px; height:48px; border-radius:12px; border:none; background:var(--orange); color:#fff; font:700 15px "Manrope"; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px;' },
                         el('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.4', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', html: '<rect x="5" y="5" width="14" height="14" rx="2"/>' }),
                         'Kaydı durdur & senaryoya gönder'
                     )
@@ -161,7 +160,7 @@ export function extensionSection() {
                 el('h2', { style: "font:800 44px/1.12 'Sora'; color:var(--fg); margin:0 0 20px;" }, 'AFT Recorder eklentisini indir'),
                 el('p', { style: "font:400 17px/1.6 'Manrope'; color:var(--fg-3); margin-bottom:32px;" }, 'Tarayıcına kur, projene bağlan ve adımlarını kaydetmeye başla. Kurulum 30 saniye, kayıt için ek bir ayar gerekmez.'),
                 el('div', { style: 'display:flex; align-items:center; gap:16px; margin-bottom:32px;' },
-                    el('a', { href: 'https://chrome.google.com/webstore', target: '_blank', rel: 'noopener', style: 'display:inline-flex; align-items:center; gap:12px; height:56px; padding:0 28px; border-radius:14px; background:var(--orange); color:#fff; font:700 16px "Manrope"; text-decoration:none; box-shadow:0 12px 28px color-mix(in srgb, var(--orange) 32%, transparent);' },
+                    el('a', { class: 'hover-grow', href: 'https://chrome.google.com/webstore', target: '_blank', rel: 'noopener', style: 'display:inline-flex; align-items:center; gap:12px; height:56px; padding:0 28px; border-radius:14px; background:var(--orange); color:#fff; font:700 16px "Manrope"; text-decoration:none; box-shadow:0 12px 28px color-mix(in srgb, var(--orange) 32%, transparent);' },
                         el('svg', { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', html: '<path d="M12 2v14m0 0l-5-5m5 5l5-5M4 21h16"/>' }),
                         "Chrome'a Ekle"
                     ),
@@ -183,7 +182,7 @@ export function extensionSection() {
                 ),
                 el('p', { style: 'font:500 13px "Manrope"; color:var(--fg-3); margin:0;' }, 'Sürüm 2.4.1 · 1,8 MB · Tüm güncellemeler otomatik')
             ),
-            el('div', { style: 'background:var(--surface); border:1px solid var(--border); border-radius:24px; box-shadow:var(--shadow-lg); overflow:hidden;' },
+            el('div', { class: CARD_ANIM, style: 'background:var(--surface); border:1px solid var(--border); border-radius:24px; box-shadow:var(--shadow-lg); overflow:hidden;' },
                 el('div', { style: 'height:180px; background:var(--blue-strong); position:relative; display:grid; place-items:center;' },
                     el('div', { style: 'position:absolute; inset:0; background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.15) 1px, transparent 0); background-size:24px 24px; opacity:.4;' }),
                     el('span', { style: 'position:relative; width:64px; height:64px; border-radius:16px; background:var(--orange); display:grid; place-items:center; box-shadow:0 10px 24px rgba(0,0,0,.3);' },
@@ -199,7 +198,7 @@ export function extensionSection() {
                         el('span', { style: 'font:700 12px "Manrope"; color:var(--green); background:var(--green-tint); padding:6px 12px; border-radius:8px;' }, 'Doğrulanmış')
                     ),
                     el('p', { style: 'font:400 15px/1.6 "Manrope"; color:var(--fg-3); margin:0 0 24px;' }, 'Ekrandaki adımlarını kaydedip kodsuz test senaryolarına dönüştürür. Projene bağlanır, tek tıkla kayda başlar.'),
-                    el('a', { href: 'https://chrome.google.com/webstore', target: '_blank', rel: 'noopener', style: 'display:flex; align-items:center; justify-content:center; gap:10px; height:48px; border-radius:12px; background:var(--blue); color:#fff; font:700 15px "Manrope"; text-decoration:none;' },
+                    el('a', { class: 'hover-grow', href: 'https://chrome.google.com/webstore', target: '_blank', rel: 'noopener', style: 'display:flex; align-items:center; justify-content:center; gap:10px; height:48px; border-radius:12px; background:var(--blue); color:#fff; font:700 15px "Manrope"; text-decoration:none;' },
                         el('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', html: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>' }),
                         'İndir & Kur'
                     )
@@ -228,11 +227,11 @@ export function solutions() {
                 checkItem('Excel ve PDF ile paylaşılabilir raporlar üret')
             )
         ),
-        el('div', { style: 'background:var(--surface); border:1px solid var(--border); border-radius:24px; box-shadow:var(--shadow-lg); overflow:hidden;' },
+        el('div', { class: CARD_ANIM, style: 'background:var(--surface); border:1px solid var(--border); border-radius:24px; box-shadow:var(--shadow-lg); overflow:hidden;' },
             el('div', { style: 'display:flex; align-items:center; gap:24px; padding:0 24px; border-bottom:1px solid var(--border);' },
                 el('div', { style: 'padding:20px 0; font:700 14px "Manrope"; color:var(--fg); border-bottom:2px solid var(--orange); margin-bottom:-1px;' }, 'Senaryo Adımları'),
                 el('div', { style: 'padding:20px 0; font:600 14px "Manrope"; color:var(--fg-3);' }, 'Seçici Değerler'),
-                el('button', { style: 'margin-left:auto; height:36px; padding:0 16px; border-radius:10px; border:none; background:var(--green); color:#fff; font:700 14px "Manrope"; cursor:pointer; display:inline-flex; align-items:center; gap:8px;' },
+                el('button', { class: 'hover-grow', style: 'margin-left:auto; height:36px; padding:0 16px; border-radius:10px; border:none; background:var(--green); color:#fff; font:700 14px "Manrope"; cursor:pointer; display:inline-flex; align-items:center; gap:8px;' },
                     el('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'currentColor', html: '<path d="M8 5v14l11-7z"/>' }),
                     'Run'
                 )
@@ -270,6 +269,7 @@ export function pricing() {
     );
 
     const planCard = (title, price, desc, btnText, featuresList, isPopular) => el('div', {
+            class: CARD_ANIM,
             style: `background:var(--surface); border:2px solid ${isPopular ? 'var(--orange)' : 'var(--border)'}; border-radius:24px; padding:40px; box-shadow:var(--shadow); position:relative; display:flex; flex-direction:column;`
         },
         isPopular ? el('div', { style: 'position:absolute; top:-14px; left:50%; transform:translateX(-50%); background:var(--orange); color:#fff; font:700 12px "Manrope"; padding:6px 16px; border-radius:99px;' }, 'En Çok Tercih Edilen') : '',
@@ -285,6 +285,7 @@ export function pricing() {
                 )
         ),
         el('button', {
+            class: 'press',
             style: `width:100%; height:52px; border-radius:12px; font:700 16px "Manrope"; cursor:pointer; border:none; margin-bottom:32px; ${isPopular ? 'background:var(--orange); color:#fff; box-shadow:0 8px 24px color-mix(in srgb, var(--orange) 30%, transparent);' : 'background:var(--bg-2); color:var(--fg); border:1px solid var(--border-2);'}`,
             onClick: () => navigate(price === 'Özel' ? '/' : '/register')
         }, btnText),
@@ -332,8 +333,8 @@ export function landingScreen() {
                 ),
                 el('div', { style: 'margin-left:auto; display:flex; align-items:center; gap:11px;' },
                     themeToggle(),
-                    el('button', { style: "height:40px; padding:0 16px; border-radius:10px; border:1px solid transparent; background:none; color:var(--fg); font:600 14px 'Manrope'; cursor:pointer;", onClick: () => navigate('/login') }, 'Giriş Yap'),
-                    el('button', { style: "height:40px; padding:0 18px; border-radius:10px; border:none; background:var(--orange); color:#fff; font:700 14px 'Manrope'; cursor:pointer; box-shadow:0 6px 16px color-mix(in srgb, var(--orange) 32%, transparent);", onClick: () => navigate('/register') }, 'Kayıt Ol'),
+                    el('button', { class: 'press', style: "height:40px; padding:0 16px; border-radius:10px; border:1px solid transparent; background:none; color:var(--fg); font:600 14px 'Manrope'; cursor:pointer;", onClick: () => navigate('/login') }, 'Giriş Yap'),
+                    el('button', { class: 'press hover-grow', style: "height:40px; padding:0 18px; border-radius:10px; border:none; background:var(--orange); color:#fff; font:700 14px 'Manrope'; cursor:pointer; box-shadow:0 6px 16px color-mix(in srgb, var(--orange) 32%, transparent);", onClick: () => navigate('/register') }, 'Kayıt Ol'),
                 )
             )
         ),
@@ -343,8 +344,8 @@ export function landingScreen() {
             el('h1', { style: "font:800 64px/1.1 'Sora'; color:var(--fg); max-width:900px; margin:0; letter-spacing:-0.03em;", html: 'Test otomasyonunu <em style="color:var(--orange); font-style:normal;">kod yazmadan</em> yönet.' }),
             el('p', { style: "font:400 18px/1.6 'Manrope'; color:var(--fg-3); margin:24px 0 40px; max-width:680px;" }, 'Chrome eklentisiyle aksiyonlarını kaydet, AFT bunları arka planda otomatik çalıştırsın. Senaryo yaz, zamanla, raporla.'),
             el('div', { style: 'display:flex; gap:16px;' },
-                el('button', { style: "height:56px; padding:0 32px; border-radius:12px; border:none; background:var(--orange); color:#fff; font:700 16px 'Manrope'; cursor:pointer; box-shadow:0 8px 24px color-mix(in srgb, var(--orange) 32%, transparent);", onClick: () => navigate('/register') }, 'Ücretsiz Başla'),
-                el('button', { style: "height:56px; padding:0 32px; border-radius:12px; border:1px solid var(--border-2); background:var(--surface); color:var(--fg); font:700 16px 'Manrope'; cursor:pointer;", onClick: () => navigate('/login') }, 'Demoyu İzle')
+                el('button', { class: 'press hover-lift', style: "height:56px; padding:0 32px; border-radius:12px; border:none; background:var(--orange); color:#fff; font:700 16px 'Manrope'; cursor:pointer; box-shadow:0 8px 24px color-mix(in srgb, var(--orange) 32%, transparent);", onClick: () => navigate('/register') }, 'Ücretsiz Başla'),
+                el('button', { class: 'press hover-lift', style: "height:56px; padding:0 32px; border-radius:12px; border:1px solid var(--border-2); background:var(--surface); color:var(--fg); font:700 16px 'Manrope'; cursor:pointer;", onClick: () => navigate('/login') }, 'Demoyu İzle')
             )
         ),
 
@@ -359,7 +360,7 @@ export function landingScreen() {
             el('div', { style: 'background:var(--blue-strong); border-radius:32px; padding:80px 40px; text-align:center; position:relative; overflow:hidden;' },
                 el('h2', { style: "font:800 48px/1.12 'Sora'; letter-spacing:-.025em; color:#fff; margin:0;" }, 'Otomasyona bugün başla'),
                 el('p', { style: "font:400 18px 'Manrope'; color:rgba(255,255,255,.85); margin:16px 0 36px;" }, 'İlk senaryonu 5 dakikada çalıştır. Kart bilgisi gerekmez.'),
-                el('button', { onclick: () => navigate('/register'), style: "display:inline-flex; align-items:center; gap:10px; height:56px; padding:0 32px; border-radius:14px; border:none; background:var(--orange); color:#fff; font:700 16px 'Manrope'; cursor:pointer; box-shadow:0 12px 32px rgba(0,0,0,.25);" },
+                el('button', { class: 'press hover-grow', onclick: () => navigate('/register'), style: "display:inline-flex; align-items:center; gap:10px; height:56px; padding:0 32px; border-radius:14px; border:none; background:var(--orange); color:#fff; font:700 16px 'Manrope'; cursor:pointer; box-shadow:0 12px 32px rgba(0,0,0,.25);" },
                     'Ücretsiz Hesap Oluştur',
                     el('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.5', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', html: '<path d="M5 12h14M13 6l6 6-6 6"/>' })
                 )
@@ -403,8 +404,7 @@ export function landingScreen() {
                 )
             ),
             el('div', { style: 'max-width:1200px; margin:0 auto; padding:32px 24px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;' },
-                el('span', { style: 'font:500 14px "Manrope"; color:var(--fg-3);' }, '© ' + new Date().getFullYear() + ' AFT Automation. Tüm hakları saklıdır.'),
-                el('span', { style: 'font:500 14px "Manrope"; color:var(--fg-3);' }, "Türkiye'de tasarlandı")
+                el('span', { style: 'font:500 14px "Manrope"; color:var(--fg-3); text-align:center;' }, '© ' + new Date().getFullYear() + ' AFT Automation. Tüm hakları saklıdır.'),
             )
         )
     );
