@@ -25,12 +25,14 @@ public class ScheduleService {
 
     private final ScheduledTaskRepository tasks;
     private final ScenarioRepository scenarios;
+    private final CronPolicy cronPolicy;
 
     @Transactional
     public ScheduleResponse create(UUID scenarioId, String cron) {
         Scenario scenario = scenarios.findByIdAndModule_Project_User_Id(scenarioId, SecurityUtils.currentUserId())
                 .orElseThrow(() -> new NotFoundException("Senaryo bulunamadı"));
 
+        cronPolicy.validate(cron);
         Instant next = computeNext(cron);
         ScheduledTask task = tasks.save(ScheduledTask.builder()
                 .scenario(scenario)
@@ -52,6 +54,7 @@ public class ScheduleService {
         ScheduledTask task = owned(taskId);
         task.setActive(active);
         if (active) {
+            cronPolicy.validate(task.getCronExpression());      // tekrar aktifte de policy'yi doğrula
             task.setNextFireAt(computeNext(task.getCronExpression()));
         }
         return toResponse(task);
@@ -62,21 +65,21 @@ public class ScheduleService {
         tasks.delete(owned(taskId));
     }
 
-    private ScheduledTask owned(UUID taskId){
+    private ScheduledTask owned(UUID taskId) {
         return tasks.findByIdAndScenario_Module_Project_User_Id(taskId, SecurityUtils.currentUserId())
                 .orElseThrow(() -> new NotFoundException("Zamanlanmış plan bulunamadı"));
     }
 
-    private Instant computeNext(String cron){
+    private Instant computeNext(String cron) {
         if (!CronExpression.isValidExpression(cron)) {
-            throw new ValidationException("Gecersiz cron ifadesi: " + cron);
+            throw new ValidationException("Geçersiz cron ifadesi: " + cron);
         }
         LocalDateTime next = CronExpression.parse(cron).next(LocalDateTime.now());
-        if (next == null) throw new ValidationException("Bu cron hicbir zaman tetiklenmez: " + cron);
+        if (next == null) throw new ValidationException("Bu cron hiçbir zaman tetiklenmez: " + cron);
         return next.atZone(ZoneId.systemDefault()).toInstant();
     }
 
-    private ScheduleResponse toResponse(ScheduledTask t){
+    private ScheduleResponse toResponse(ScheduledTask t) {
         return new ScheduleResponse(t.getId(), t.getCronExpression(), t.isActive(),
                 t.getNextFireAt(), t.getLastFiredAt());
     }

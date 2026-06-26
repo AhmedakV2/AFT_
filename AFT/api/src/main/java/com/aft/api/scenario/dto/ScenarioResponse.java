@@ -6,5 +6,5 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record ScenarioResponse(
-        UUID id, String name, String description, ScenarioStatus status, Instant createdAt
+        UUID id, String name, String description, ScenarioStatus status,boolean included ,Instant createdAt
 ) {}

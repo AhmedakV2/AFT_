@@ -15,6 +15,7 @@ const authResp = (email) => ({ accessToken: fakeJwt(email), refreshToken: 'mock.
 const uid = () => crypto.randomUUID();
 const nowIso = () => new Date().toISOString();
 const pageOf = (content) => ({ content, totalElements: content.length, totalPages: 1, number: 0 });
+const nextFireMock = () => new Date(Date.now() + 60_000).toISOString(); // mock cron çözmez; backend gerçek değeri hesaplar
 
 const projDb = {
     projects: [
@@ -24,12 +25,16 @@ const projDb = {
     modules: [],      // {id, projectId, name, description, createdAt}
     scenarios: [],    // {id, moduleId, name, description, status, createdAt}
     steps: {},        // scenarioId -> [adım]
+    schedules: [],    // {id, scenarioId, cron, active, nextFireAt, lastFiredAt}
 };
 
 // Bir senaryonun adım dizisini getir, yoksa boş oluştur (demo adım enjekte etmez)
 function stepsOf(scenarioId) {
     return projDb.steps[scenarioId] || (projDb.steps[scenarioId] = []);
 }
+
+// ScheduleResponse şekli: dahili scenarioId dışarı sızmadan döner
+const toSchedule = ({ scenarioId, ...rest }) => rest;
 
 // Gerçek backend sözleşmesi (flat): modül/senaryo create query param, listeleme query filtreli
 function mockProjects(method, fullPath, body) {
@@ -43,11 +48,12 @@ function mockProjects(method, fullPath, body) {
         if (method === 'POST') { const p = { id: uid(), ...body, createdAt: nowIso() }; projDb.projects.unshift(p); return p; }
     }
 
-    // Proje sil (+ cascade: modül, senaryo, adım) (/api/v1/projects/{id})
+    // Proje sil (+ cascade: modül, senaryo, adım, plan) (/api/v1/projects/{id})
     if (method === 'DELETE' && seg[2] === 'projects' && seg[3]) {
         const moduleIds = projDb.modules.filter((m) => m.projectId === seg[3]).map((m) => m.id);
         const scenarioIds = projDb.scenarios.filter((s) => moduleIds.includes(s.moduleId)).map((s) => s.id);
         scenarioIds.forEach((sid) => { delete projDb.steps[sid]; });                    // adımları sil
+        projDb.schedules = projDb.schedules.filter((t) => !scenarioIds.includes(t.scenarioId)); // planları sil
         projDb.scenarios = projDb.scenarios.filter((s) => !moduleIds.includes(s.moduleId)); // senaryoları sil
         projDb.modules = projDb.modules.filter((m) => m.projectId !== seg[3]);          // modülleri sil
         projDb.projects = projDb.projects.filter((p) => p.id !== seg[3]);               // projeyi sil
@@ -66,10 +72,11 @@ function mockProjects(method, fullPath, body) {
         }
     }
 
-    // Modül sil (+ cascade: senaryo, adım) (/api/v1/modules/{id})
+    // Modül sil (+ cascade: senaryo, adım, plan) (/api/v1/modules/{id})
     if (method === 'DELETE' && seg[2] === 'modules' && seg[3]) {
         const scenarioIds = projDb.scenarios.filter((s) => s.moduleId === seg[3]).map((s) => s.id);
         scenarioIds.forEach((sid) => { delete projDb.steps[sid]; });                    // adımları sil
+        projDb.schedules = projDb.schedules.filter((t) => !scenarioIds.includes(t.scenarioId)); // planları sil
         projDb.scenarios = projDb.scenarios.filter((s) => s.moduleId !== seg[3]);       // senaryoları sil
         projDb.modules = projDb.modules.filter((m) => m.id !== seg[3]);                 // modülü sil
         return 'Modül silindi';
@@ -106,11 +113,42 @@ function mockProjects(method, fullPath, body) {
         return { runId: uid(), status: 'QUEUED' };
     }
 
-    // Senaryo sil (+ cascade: adım) (/api/v1/scenarios/{id})
+    // Zamanlanmış görevler — listele (/api/v1/scenarios/{id}/schedules)
+    if (method === 'GET' && seg[2] === 'scenarios' && seg[4] === 'schedules' && !seg[5]) {
+        return projDb.schedules.filter((t) => t.scenarioId === seg[3]).map(toSchedule);
+    }
+
+    // Zamanlanmış görev — oluştur (/api/v1/scenarios/{id}/schedules)
+    if (method === 'POST' && seg[2] === 'scenarios' && seg[4] === 'schedules' && !seg[5]) {
+        const cron = (body.cron || '').trim();
+        const f = cron.split(/\s+/);
+        if (f.length !== 6) throw { message: 'Geçersiz cron ifadesi.' };                // backend de 400 döner
+        if (!/^[0-5]?\d$/.test(f[0])) throw { message: 'Çok sık tetikleme. En fazla 60 saniyede bir çalışabilir.' }; // saniye sabit
+        const t = { id: uid(), scenarioId: seg[3], cron, active: true, nextFireAt: nextFireMock(), lastFiredAt: null };
+        projDb.schedules.unshift(t); return toSchedule(t);
+    }
+
+    // Senaryo sil (+ cascade: adım, plan) (/api/v1/scenarios/{id})
     if (method === 'DELETE' && seg[2] === 'scenarios' && seg[3] && !seg[4]) {
         delete projDb.steps[seg[3]];                                                    // adımları sil
+        projDb.schedules = projDb.schedules.filter((t) => t.scenarioId !== seg[3]);     // planları sil
         projDb.scenarios = projDb.scenarios.filter((s) => s.id !== seg[3]);             // senaryoyu sil
         return 'Senaryo silindi';
+    }
+
+    // Zamanlanmış görev — aktif/pasif yap (/api/v1/schedules/{id})
+    if (method === 'PATCH' && seg[2] === 'schedules' && seg[3]) {
+        const t = projDb.schedules.find((x) => x.id === seg[3]);
+        if (!t) throw { message: 'Plan bulunamadı.' };
+        t.active = body.active !== false;                                               // body {active}
+        if (t.active) t.nextFireAt = nextFireMock();                                     // tekrar aktifse sonraki tetik yenilenir
+        return toSchedule(t);
+    }
+
+    // Zamanlanmış görev — sil (/api/v1/schedules/{id})
+    if (method === 'DELETE' && seg[2] === 'schedules' && seg[3]) {
+        projDb.schedules = projDb.schedules.filter((x) => x.id !== seg[3]);
+        return null;                                                                    // backend ApiResponse.ok(null)
     }
 
     // Kalıtım adayları (/api/v1/scenarios/inheritable?projectId=&excludeScenarioId=)
@@ -192,7 +230,7 @@ export async function mockApi(method, path, body) {
         case 'POST /auth/logout':
             return 'Çıkış yapıldı';
         case 'GET /api/v1/dashboard/summary':
-            return { totalRuns: 128, activeSchedules: 4 };
+            return { totalRuns: 128, activeSchedules: projDb.schedules.filter((s) => s.active).length }; // aktif plan sayısı dinamik
         case 'GET /api/v1/runs/recent?limit=5':
             return [
                 { project: 'E-Ticaret', scenario: 'Kredi kartı ile ödeme', status: 'PASSED', totalSteps: 12, passedSteps: 12, runAt: new Date(Date.now() - 36e5).toISOString() },

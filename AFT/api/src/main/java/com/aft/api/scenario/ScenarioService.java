@@ -21,7 +21,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,15 +36,18 @@ public class ScenarioService {
 
     public Page<ScenarioResponse> list(Pageable pageable) {
         UUID userId = SecurityUtils.currentUserId();
-        return scenarios.findByModule_Project_User_Id(userId, pageable).map(mapper::toResponse);
+        return withIncludedFlag(scenarios.findByModule_Project_User_Id(userId, pageable));
     }
 
     public Page<ScenarioResponse> listByModule(UUID moduleId, Pageable pageable) {
         UUID userId = SecurityUtils.currentUserId();
-        return scenarios.findByModule_IdAndModule_Project_User_Id(moduleId, userId, pageable).map(mapper::toResponse);
+        return withIncludedFlag(scenarios.findByModule_IdAndModule_Project_User_Id(moduleId, userId, pageable));
     }
 
-    public ScenarioResponse get(UUID scenarioId) { return mapper.toResponse(findOwned(scenarioId)); }
+    public ScenarioResponse get(UUID scenarioId) {
+        Scenario s = findOwned(scenarioId);
+        return mapper.toResponse(s, steps.countByIncludedScenarioId(scenarioId) > 0);
+    }
 
     @Transactional(readOnly = true)
     public Page<ScenarioResponse> inheritable(UUID projectId, UUID excludeScenarioId, Pageable pageable) {
@@ -78,7 +83,7 @@ public class ScenarioService {
                     .selectors(java.util.Map.of())
                     .build());
         }
-        return mapper.toResponse(saved);
+        return mapper.toResponse(saved, false);
 
     }
 
@@ -87,14 +92,14 @@ public class ScenarioService {
         Scenario s = findOwned(id);
         s.setName(req.name());
         s.setDescription(req.description());
-        return mapper.toResponse(s);
+        return mapper.toResponse(s, steps.countByIncludedScenarioId(id) > 0);
     }
 
     @Transactional
     public ScenarioResponse changeStatus(UUID id, ScenarioStatus status) {
         Scenario s = findOwned(id);
         s.setStatus(status);
-        return mapper.toResponse(s);
+        return mapper.toResponse(s, steps.countByIncludedScenarioId(id) > 0);
     }
 
     @Transactional
@@ -103,6 +108,12 @@ public class ScenarioService {
             throw new ApiException("Bu senaryo başka senaryolar tarafından kalıtım alınıyor, önce o bağları kaldırın", HttpStatus.CONFLICT);
         }
         scenarios.delete(findOwned(id));
+    }
+
+    private Page<ScenarioResponse> withIncludedFlag(Page<Scenario> page) {
+        Set<UUID> ids = page.getContent().stream().map(Scenario::getId).collect(Collectors.toSet());
+        Set<UUID> included = ids.isEmpty() ? Set.of() : steps.findIncludedScenarioIdsIn(ids);
+        return page.map(s -> mapper.toResponse(s, included.contains(s.getId())));
     }
 
     private Scenario findOwned(UUID scenarioId) {

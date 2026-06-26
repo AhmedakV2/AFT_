@@ -8,6 +8,11 @@ import { toast } from '../components/toast.js';
 // 5 kart rengi (ayarlardaki aksan paletiyle aynı)
 const CARD_COLORS = ['#ef6c1a', '#2f6fb0', '#1f9d57', '#7c5cdb', '#e0a106'];
 
+// Üst stepper adımları ve view <-> adım eşlemesi
+const STEPS = ['Projeler', 'Modüller', 'Senaryolar', 'Düzenleme'];
+const VIEW_BY_STEP = ['projects', 'modules', 'scenarios', 'scenario'];
+const STEP_BY_VIEW = { projects: 0, modules: 1, scenarios: 2, scenario: 3 };
+
 // Sistemde kayıtlı aksiyon tipleri (INCLUDE_SCENARIO hariç; o "Kalıtım Al"dan eklenir)
 const ACTION_GROUPS = [
     { label: 'Navigasyon', items: [['NAVIGATE', 'Sayfaya git'], ['NAVIGATE_BACK', 'Geri'], ['NAVIGATE_FORWARD', 'İleri'], ['REFRESH', 'Yenile']] },
@@ -55,8 +60,32 @@ export function projectsScreen() {
 
     const render = () => {
         const map = { projects: viewProjects, modules: viewModules, scenarios: viewScenarios, scenario: viewScenario };
-        holder.replaceChildren(map[state.view]());
+        holder.replaceChildren(stepper(), map[state.view]());   // üstte stepper, altta aktif görünüm
     };
+
+    // İstenen adıma git (yalnız geri yönde; ileri kilitli)
+    const goStep = (i) => { state.view = VIEW_BY_STEP[i]; render(); };
+
+    // ---------- Üst adım göstergesi (4 adım, geri tıklanabilir) ----------
+    function stepper() {
+        const current = STEP_BY_VIEW[state.view];
+        const dot = (i) => {
+            const done = i < current, active = i === current;
+            const canGo = i < current;                          // yalnız tamamlanmış adımlar tıklanır
+            const bg = done ? 'var(--green)' : active ? 'var(--orange)' : 'var(--bg-3)';
+            const fg = done || active ? '#fff' : 'var(--fg-3)';
+            const circle = el('span', { style: `width:30px;height:30px;border-radius:99px;display:grid;place-items:center;background:${bg};color:${fg};font:700 13px var(--font-ui);flex-shrink:0;transition:background .2s` },
+                done ? icon('check', 16) : String(i + 1));
+            const label = el('span', { style: `font:600 13px var(--font-ui);color:${active ? 'var(--fg)' : 'var(--fg-3)'}` }, STEPS[i]);
+            return el(canGo ? 'button' : 'div', {
+                class: canGo ? 'press' : '', onClick: canGo ? () => goStep(i) : null,
+                style: `display:flex;align-items:center;gap:9px;border:none;background:none;cursor:${canGo ? 'pointer' : 'default'};padding:0`,
+            }, circle, label);
+        };
+        const line = () => el('span', { style: 'flex:1;height:2px;background:var(--border);min-width:18px' });
+        return el('div', { class: 'card card--pad', style: 'display:flex;align-items:center;gap:10px;margin-bottom:20px;overflow-x:auto' },
+            ...STEPS.flatMap((_, i) => i ? [line(), dot(i)] : [dot(i)]));
+    }
 
     // ---------- Yardımcı UI parçaları ----------
 
@@ -65,15 +94,6 @@ export function projectsScreen() {
         el('div', {}, el('h2', {}, title), sub && el('p', {}, sub)),
         action || '',
     );
-
-    // Geri navigasyonu için breadcrumb
-    const crumbs = (...items) => el('div', { class: 'row gap-2', style: 'margin-bottom:14px;flex-wrap:wrap;font-size:13px;font-weight:600' },
-        ...items.flatMap((it, i) => [
-            i ? el('span', { class: 'muted' }, icon('chevronR', 14)) : null,
-            it.go
-                ? el('button', { class: 'crumb', onClick: it.go }, it.label)
-                : el('span', { class: 'muted' }, it.label),
-        ].filter(Boolean)));
 
     // Ortak silme onayı: kullanıcı onaylarsa fn çalışır
     function confirmDelete(message, fn) {
@@ -197,7 +217,6 @@ export function projectsScreen() {
         })();
 
         // Modül satırlarını basar; tıklayınca senaryolara geçer
-        // Modül satırlarını basar; tıklayınca senaryolara geçer
         function paintRows(rows) {
             tbody.replaceChildren(...(rows.length
                 ? rows.map((m) => {
@@ -250,10 +269,7 @@ export function projectsScreen() {
                 el('thead', {}, el('tr', {}, el('th', {}, 'Ad'), el('th', {}, 'Açıklama'), el('th', {}, 'Tarih'), el('th', {}, ''))),
                 tbody));
 
-        return el('div', {},
-            crumbs({ label: 'Projeler', go: () => { state.view = 'projects'; render(); } }, { label: p.name }),
-            head(p.name, p.description || p.baseUrl || p.base_url, newBtn),
-            table);
+        return el('div', {}, head(p.name, p.description || p.baseUrl || p.base_url, newBtn), table);
     }
 
     // ---------- 3) Senaryolar ----------
@@ -276,9 +292,14 @@ export function projectsScreen() {
             const edit = el('button', { class: 'btn btn--ghost btn--icon btn--sm press', title: 'Düzenle', onClick: () => { state.scenario = s; state.view = 'scenario'; render(); } }, icon('settings', 16));
             const run = el('button', { class: 'btn btn--soft btn--icon btn--sm press', title: 'Çalıştır', onClick: () => runScenario(s) }, icon('play', 15));
             const del = el('button', { class: 'btn btn--ghost btn--icon btn--sm press', title: 'Sil', onClick: () => askDeleteScenario(s) }, icon('x', 16));
+
+            const nameCell = el('td', { style: 'font-weight:600;color:var(--fg)' }, s.name || '—');
+            // Başka senaryolar bunu kalıtım alıyorsa görünür rozet bas
+            if (s.included) nameCell.append(el('span', { class: 'badge badge--info', title: 'Bu senaryo başka senaryolar tarafından kullanılıyor.', style: 'margin-left:8px;font-size:11px' }, icon('layers', 12)));
+
             return el('tr', {},
                 el('td', { class: 'muted', style: 'white-space:nowrap' }, fmtDate(s.createdAt || s.created_at)),
-                el('td', { style: 'font-weight:600;color:var(--fg)' }, s.name || '—'),
+                nameCell,
                 el('td', { class: 'muted' }, s.description || '—'),
                 el('td', {}, statusBadge(s.status)),
                 el('td', {}, el('div', { class: 'row gap-2', style: 'justify-content:flex-end' }, edit, run, del)));
@@ -324,13 +345,7 @@ export function projectsScreen() {
                 el('thead', {}, el('tr', {}, el('th', {}, 'Tarih'), el('th', {}, 'Ad'), el('th', {}, 'Açıklama'), el('th', {}, 'Durum'), el('th', { style: 'text-align:right' }, 'İşlem'))),
                 tbody));
 
-        return el('div', {},
-            crumbs(
-                { label: 'Projeler', go: () => { state.view = 'projects'; render(); } },
-                { label: p.name, go: () => { state.view = 'modules'; render(); } },
-                { label: m.name }),
-            head(m.name, m.description, newBtn),
-            table);
+        return el('div', {}, head(m.name, m.description, newBtn), table);
     }
 
     // Senaryoyu çalıştırma kuyruğuna atar (gerçek uç: POST /api/v1/scenarios/{id}/run)
@@ -550,11 +565,6 @@ export function projectsScreen() {
         paintTabs();
 
         return el('div', {},
-            crumbs(
-                { label: 'Projeler', go: () => { state.view = 'projects'; render(); } },
-                { label: p.name, go: () => { state.view = 'modules'; render(); } },
-                { label: m.name, go: () => { state.view = 'scenarios'; render(); } },
-                { label: s.name }),
             head(s.name, s.description, el('div', { class: 'row gap-2' }, addStepBtn, inheritBtn, runBtn)),
             el('div', { class: 'card panel' },
                 el('div', { class: 'panel__head' }, el('div', { class: 'segbar' }, stepsTab, selTab)),

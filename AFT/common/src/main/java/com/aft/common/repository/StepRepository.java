@@ -7,15 +7,16 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 public interface StepRepository extends JpaRepository<Step, UUID> {
 
 
     @Query("select coalesce(max(s.stepOrder), 0) from Step s where s.scenario.id = :scenarioId")
     int findMaxOrder(@Param("scenarioId") UUID scenarioId);
+
+    @Query("select distinct s.includedScenarioId from Step s where s.includedScenarioId in :ids")
+    Set<UUID> findIncludedScenarioIdsIn(@Param("ids") Collection<UUID> ids);
 
     List<Step>findByScenario_IdOrderByStepOrderAsc(UUID scenarioId);
     Optional<Step> findByIdAndScenario_Module_Project_User_Id(UUID id, UUID userId);

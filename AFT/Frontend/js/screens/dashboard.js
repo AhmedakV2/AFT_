@@ -5,6 +5,9 @@ import { appShell } from '../components/appShell.js';
 import { openModal } from '../components/modal.js';
 import { navigate } from '../core/router.js';
 
+// Son çalıştırmalar tablosu satır limiti (sağdaki Popüler Projeler kartıyla aynı hizada bitsin)
+const RECENT_LIMIT = 5;
+
 async function safeGet(path, fallback) {
     try { return await api.get(path); } catch { return fallback; }
 }
@@ -145,13 +148,13 @@ export function dashboardScreen() {
         if (s.prevMonthRuns != null) monthSub.textContent = 'Geçen ay: ' + fmtNum(s.prevMonthRuns);
         if (s.monthlyDelta != null) monthDelta.replaceWith(deltaBadge(s.monthlyDelta));
 
-        const runs = await safeGet('/api/v1/runs/recent?limit=8', []);
+        const runs = await safeGet(`/api/v1/runs/recent?limit=${RECENT_LIMIT}`, []);
         if (!runs || !runs.length) {
             tbody.replaceChildren(el('tr', {}, el('td', { colspan: '5' },
                 el('div', { class: 'empty' }, icon('fileText', 40), el('div', {}, 'Henüz çalıştırma yok'),
                     el('div', { style: 'font-size:13px;margin-top:4px' }, 'Bir senaryo çalıştırınca burada görünecek.')))));
         } else {
-            tbody.replaceChildren(...runs.slice(0, 8).map(runRow));
+            tbody.replaceChildren(...runs.slice(0, RECENT_LIMIT).map(runRow));
         }
 
         // Kritik uyarılar
